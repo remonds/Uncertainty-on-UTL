@@ -360,6 +360,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     names(X) <- paste("y", c(1:Ndet), sep = "")
   
     # Blom's rankit
+    # Pk = (k-a)/(n+1-2a) with a=3/8
     zk <- qnorm((((N-Ndet+1):N) - 3/8) / (N + 1/4))
   
     # Matrix Formulation of the Multiple Linear Regression (MLR) Model
