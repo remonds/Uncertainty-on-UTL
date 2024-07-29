@@ -209,7 +209,7 @@ utl.mc <- function(c, CVt, ndig = 2) {
 
     # numerical tolerance, delta
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
-    delta <- 0.5 * 10^(floor(log10(sd_y) + 1 - ndig))
+    delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
 
     # standard error of the h values of yest, ycv, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
