@@ -112,7 +112,7 @@ utl.mc <- function(c, CVt, ndig = 2) {
              )/sqrt(N)
   
   # initialize counter for number of iterations
-  h    <-1
+  h    <- 1
   
   # Initialize the list to store results of each iteration
   mclist <- list()
@@ -306,18 +306,18 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
              )/sqrt(N)
 
   # create data frame
-  Xdf <- data.frame(
+  Xdf  <- data.frame(
     xk = c,
     CVt = CVt,
     detects = detects
   )
 
   # keep only the detects
-  Xdf <- Xdf[detects==TRUE,]
+  Xdf  <- Xdf[detects==TRUE,]
   Ndet <- nrow(Xdf)
   
   # initialize counter for number of iterations
-  h    <-1
+  h    <- 1
   
   # Initialize the list to store results of each iteration
   mclist <- list()
