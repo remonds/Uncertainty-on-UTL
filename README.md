@@ -10,7 +10,7 @@ This project was created by Robert Emonds, Theo Scheffers, and Peter van Balen. 
 
 Example:
 ```markdown
-This project uses code from UTL.uncertainty (https://github.com/remonds/UTL.uncertainty) by Robert Emonds, Theo Scheffers, and Peter van Balen.
+This project uses code from Uncertainty-on-UTL (https://github.com/remonds/Uncertainty-on-UTL) by Robert Emonds, Theo Scheffers, and Peter van Balen.
 ```
 
 ## License
