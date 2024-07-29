@@ -37,8 +37,11 @@
 # utl.ros.mc(c, detects, CVt)
 # 
 # input variables
-# c       : numeric vector of measured concentration 
-#           values (mg/m³)
+# c       : numeric vector of 8h time-weighted exposure
+#           values (mg/m³ or ppm)
+#           These values are obtained from the measured 
+#           concentrations from the personal air samplings 
+#           and the estimated daily exposure time 
 # CVt     : expression of uncertainty
 #           numeric vector of total coefficient of 
 #           variation of measurement 
