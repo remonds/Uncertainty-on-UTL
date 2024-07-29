@@ -39,9 +39,10 @@
 # input variables
 # c       : numeric vector of measured concentration 
 #           values (mg/m³)
-# CVt     : numeric vector of total coefficient of 
-#           variance of measurement 
-#           (sampling variance + analytical variance)
+# CVt     : expression of uncertainty
+#           numeric vector of total coefficient of 
+#           variation of measurement 
+#           (sampling variation + analytical variation)
 # detects : logical vector representing detects (TRUE) 
 #           and nondetects (FALSE) 
 # ndig    : number of significant decimal digits regarded
