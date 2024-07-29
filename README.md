@@ -2,7 +2,7 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
-Your project description here.
+> `Your project description here. == Reminder: still to be done ==`
 
 ## Attribution
 
