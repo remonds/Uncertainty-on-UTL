@@ -1,5 +1,5 @@
 ##########################################################################################
-# uncertainty on UTL by Monte Carlo using frequentist approach
+# Uncertainty on UTL by Monte Carlo using frequentist approach
 # 
 # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Uncertainty 
 # of measurement Part 3: Guide to the expression 
@@ -20,24 +20,24 @@
 # added p-values plow and phigh to output
 # 
 # 19/07/2024
-# utl.ros.mc(c, detects, CVt)
+# utl.ros.mc(twa, detects, CVt)
 # for datasets with nondetects
 # measurement uncertainty interval on utl by Multiple Linear Regression on detects
 # frequentist approach
 # see description below of input and output variables
 # 
 # 26/05/2024
-# utl.mc(c, CVt)
+# utl.mc(twa, CVt)
 # for datasets without nondetects
 # measurement uncertainty interval on utl - no nondetects
 # frequentist approach
 # see description below of input and output variables
 ##########################################################################################
-# utl.mc(c, CVt)
-# utl.ros.mc(c, detects, CVt)
+# utl.mc(twa, CVt)
+# utl.ros.mc(twa, detects, CVt)
 # 
 # input variables
-# c       : numeric vector of 8h time-weighted exposure
+# twa     : numeric vector of 8h time-weighted exposure
 #           values (mg/m³ or ppm)
 #           These values are obtained from the measured 
 #           concentrations from the personal air samplings 
@@ -76,14 +76,14 @@
 #        ("confidence limit" is used for the mean)
 ##########################################################################################
 # test values used during development (cottondust)
-# c   <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
+# twa <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
 # CVt <- c(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
 # CVt <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
 # 
-# mc <- utl.mc(c, CVt)
+# mc <- utl.mc(twa, CVt)
 ######################################################################
 
-utl.mc <- function(c, CVt, ndig = 2) {
+utl.mc <- function(twa, CVt, ndig = 2) {
   # coverage level for exposure
   pexp <- 0.70
   
@@ -103,7 +103,7 @@ utl.mc <- function(c, CVt, ndig = 2) {
   # ndig <- 2 # computing time is in the order of seconds
   
   # number of input quantities
-  N    <- length(c)
+  N    <- length(twa)
   
   # coverage factor for quantiles
   UT   <- qt(pexp,
@@ -121,10 +121,10 @@ utl.mc <- function(c, CVt, ndig = 2) {
     ##########################################################################################
     # Generation of input distributions
     ##########################################################################################
-    # generate M times normal distribution around c
+    # generate M times normal distribution around twa
     X <- data.frame(
       matrix(
-        rnorm(M * N, mean = c, sd = CVt * c),
+        rnorm(M * N, mean = twa, sd = CVt * twa),
         ncol = N, byrow = TRUE
       )
     )
@@ -162,13 +162,13 @@ utl.mc <- function(c, CVt, ndig = 2) {
     #   2. CV
     #   3. lower and upper bounds (endpoints) of coverage interval with minimum width
     ##########################################################################################
-    yest <- mean(UTL)
-    uy   <- sd(UTL)
-    ycv  <- uy / yest
-    Mpos <- length(UTL)
+    yest  <- mean(UTL)
+    uy    <- sd(UTL)
+    ycv   <- uy / yest
+    Mpos  <- length(UTL)
     
     # index for coverage width in output vector
-    q <- as.integer(pmu * Mpos + 0.5)
+    q     <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
     UTL   <- as.double(sort(UTL, decreasing = FALSE))
@@ -205,11 +205,11 @@ utl.mc <- function(c, CVt, ndig = 2) {
     
     # standard deviation of h*M values of Y
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1
-    sd_y <- sd(unlist(lapply(mclist, `[[`, "Y")))
+    sd_y  <- sd(unlist(lapply(mclist, `[[`, "Y")))
 
     # numerical tolerance, delta
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
-    delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
+    delta    <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
 
     # standard error of the h values of yest, ycv, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
@@ -238,13 +238,13 @@ utl.mc <- function(c, CVt, ndig = 2) {
   }
 
   # endresult based on all the h*M generated samples
-  UTL  <- unlist(lapply(mclist, `[[`, "Y"))
-  UTL  <- as.double(sort(UTL, decreasing = FALSE))
-  yest <- mean(UTL)          # output value
-  uy   <- sd(UTL)
-  ycv  <- uy / yest          # output value
-  Mpos <- length(UTL)        # output value
-  q <- as.integer(pmu * Mpos + 0.5)
+  UTL   <- unlist(lapply(mclist, `[[`, "Y"))
+  UTL   <- as.double(sort(UTL, decreasing = FALSE))
+  yest  <- mean(UTL)         # output value
+  uy    <- sd(UTL)
+  ycv   <- uy / yest         # output value
+  Mpos  <- length(UTL)       # output value
+  q     <- as.integer(pmu * Mpos + 0.5)
   dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
@@ -270,15 +270,15 @@ utl.mc <- function(c, CVt, ndig = 2) {
 
 ##########################################################################################
 # test values used during development (EN 689 Annex H)
-# c <-      c( 0.75,  2.00,  0.75,  0.80,  0.92,  1.05,  1.10,  1.45,  0.75,  2.50)
-# detects <-c(FALSE,  TRUE, FALSE,  TRUE,  TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE)
-# CVt <-    c( 0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15)
-# CVt <-    c( 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00)
+# twa     <- c( 0.75,  2.00,  0.75,  0.80,  0.92,  1.05,  1.10,  1.45,  0.75,  2.50)
+# detects <- c(FALSE,  TRUE, FALSE,  TRUE,  TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE)
+# CVt     <- c( 0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15)
+# CVt     <- c( 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00)
 # 
-# mc <- utl.ros.mc(c, detects, CVt)
+# mc <- utl.ros.mc(twa, detects, CVt)
 ##########################################################################################
   
-utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
+utl.ros.mc <- function(twa, detects, CVt, ndig = 2) {
   # coverage level for exposure
   pexp <- 0.70
   
@@ -297,7 +297,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   # ndig <- 2 # computing time is in the order of seconds
   
   # number of input quantities
-  N    <- length(c)
+  N    <- length(twa)
   
   # coverage factor for quantiles
   UT   <- qt(pexp,
@@ -307,7 +307,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
 
   # create data frame
   Xdf  <- data.frame(
-    xk = c,
+    xk = twa,
     CVt = CVt,
     detects = detects
   )
@@ -326,7 +326,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     ##########################################################################################
     # Generation of input distributions
     ##########################################################################################
-    # generate M times normal distribution around the detects in c
+    # generate M times normal distribution around the detects in twa
     X <- data.frame(
       matrix(
         rnorm(M * Ndet, mean = Xdf$xk, sd = Xdf$CVt * Xdf$xk),
@@ -361,6 +361,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   
     # Blom's rankit
     # Pk = (k-a)/(n+1-2a) with a=3/8
+    # zk = qnorm(Pk)
     zk <- qnorm((((N - Ndet + 1):N) - 3/8) / (N + 1/4))
   
     # Matrix Formulation of the Multiple Linear Regression (MLR) Model
@@ -396,13 +397,13 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     #   2. CV
     #   3. lower and upper bounds (endpoints) of coverage interval with minimum width
     ##########################################################################################
-    yest <- mean(UTL)
-    uy   <- sd(UTL)
-    ycv  <- uy / yest
-    Mpos <- length(UTL)
+    yest  <- mean(UTL)
+    uy    <- sd(UTL)
+    ycv   <- uy / yest
+    Mpos  <- length(UTL)
     
     # index for coverage width in output vector
-    q <- as.integer(pmu * Mpos + 0.5)
+    q     <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
     UTL   <- as.double(sort(UTL, decreasing = FALSE))
@@ -472,13 +473,13 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   }
   
   # endresult based on all the h*M generated samples
-  UTL  <- unlist(lapply(mclist, `[[`, "Y"))
-  UTL  <- as.double(sort(UTL, decreasing = FALSE))
-  yest <- mean(UTL)          # output value
-  uy   <- sd(UTL)
-  ycv  <- uy / yest          # output value
-  Mpos <- length(UTL)        # output value
-  q <- as.integer(pmu * Mpos + 0.5)
+  UTL   <- unlist(lapply(mclist, `[[`, "Y"))
+  UTL   <- as.double(sort(UTL, decreasing = FALSE))
+  yest  <- mean(UTL)         # output value
+  uy    <- sd(UTL)
+  ycv   <- uy / yest         # output value
+  Mpos  <- length(UTL)       # output value
+  q     <- as.integer(pmu * Mpos + 0.5)
   dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
