@@ -95,7 +95,7 @@ utl.mc <- function(c, CVt, ndig = 2) {
   
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
-  M    <- max(100/(1-pmu), 1e4)
+  M    <- max(100 / (1 - pmu), 1e4)
   
   # number of significant decimal digits regarded
   # as meaningful in the numerical value of UTL
@@ -107,9 +107,9 @@ utl.mc <- function(c, CVt, ndig = 2) {
   
   # coverage factor for quantiles
   UT   <- qt(pexp,
-             df = N-1,
-             ncp = sqrt(N)*qnorm(1-ueft)
-             )/sqrt(N)
+             df = N - 1,
+             ncp = sqrt(N) * qnorm(1 - ueft)
+             ) / sqrt(N)
   
   # initialize counter for number of iterations
   h    <- 1
@@ -124,7 +124,7 @@ utl.mc <- function(c, CVt, ndig = 2) {
     # generate M times normal distribution around c
     X <- data.frame(
       matrix(
-        rnorm(M*N, mean = c, sd = CVt*c),
+        rnorm(M * N, mean = c, sd = CVt * c),
         ncol = N, byrow = TRUE
       )
     )
@@ -146,15 +146,15 @@ utl.mc <- function(c, CVt, ndig = 2) {
     # Propagation of the input distributions through the model
     # model: calculate by row
     #   1. GM and GSD
-    #   2. UTL = GM*GSD^UT
+    #   2. UTL = GM * GSD^UT
     ##########################################################################################
     # Transform back to the lognormally distributed space and
     # propagate the input distributions through the model
     # The model UTL=GM*GSD^UT is iaw EN 689 Annex F
     # GM <- exp(rowMeans(X))
-    GM   <- exp(apply(X,1,mean))
-    GSD  <- exp(apply(X,1,sd  ))
-    UTL  <- as.double(GM*GSD^UT)
+    GM   <- exp(apply(X, 1, mean))
+    GSD  <- exp(apply(X, 1, sd  ))
+    UTL  <- as.double(GM * GSD^UT)
     
     ##########################################################################################
     # Statistics of UTL
@@ -164,28 +164,28 @@ utl.mc <- function(c, CVt, ndig = 2) {
     ##########################################################################################
     yest <- mean(UTL)
     uy   <- sd(UTL)
-    ycv  <- uy/yest
+    ycv  <- uy / yest
     Mpos <- length(UTL)
     
     # index for coverage width in output vector
-    q <- as.integer(pmu*Mpos+0.5)
+    q <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
     UTL   <- as.double(sort(UTL, decreasing = FALSE))
-    dy    <- UTL[(q+1):Mpos] - UTL[1:(Mpos-q)]
+    dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
     
     # minimum width of the coverage interval
     dymin <- min(dy)
     
     # find index of interval with minimum width
     ind   <- which(dy == dymin)
-    ind   <- as.integer(mean(ind)+0.5)
+    ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
     ylow  <- UTL[ind]
-    yhigh <- UTL[ind+q]
+    yhigh <- UTL[ind + q]
     # associated p-values
-    plow  <- (ind)/Mpos
-    phigh <- (ind+q)/Mpos
+    plow  <- (ind) / Mpos
+    phigh <- (ind + q) / Mpos
     
     # add results of iteration to list
     mclist <- append(mclist, list(list(
@@ -213,18 +213,18 @@ utl.mc <- function(c, CVt, ndig = 2) {
 
     # standard error of the h values of yest, ycv, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
-    yest_se  <- sd(sapply(mclist, `[[`, "yest" ))/sqrt(h)
-    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  ))/sqrt(h)
+    yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
+    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  )) / sqrt(h)
     # ycv is not in same order of magnitude as the rest -> use uy
-    uy_se    <- sd(sapply(mclist, `[[`, "uy"   ))/sqrt(h)
-    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" ))/sqrt(h)
-    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh"))/sqrt(h)
+    uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
+    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
+    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
     # Check if the tolerance condition is met
     if (2 * yest_se  < delta &&
         2 * uy_se    < delta &&
         2 * ylow_se  < delta &&
-        2 * yhigh_se < delta ) {
+        2 * yhigh_se < delta) {
       break
     }
     
@@ -240,19 +240,19 @@ utl.mc <- function(c, CVt, ndig = 2) {
   # endresult based on all the h*M generated samples
   UTL  <- unlist(lapply(mclist, `[[`, "Y"))
   UTL  <- as.double(sort(UTL, decreasing = FALSE))
-    yest <- mean(UTL)
+  yest <- mean(UTL)          # output value
   uy   <- sd(UTL)
-    ycv  <- uy/yest
-    Mpos <- length(UTL)
-  q <- as.integer(pmu*Mpos+0.5)
-  dy    <- UTL[(q+1):Mpos] - UTL[1:(Mpos-q)]
+  ycv  <- uy / yest          # output value
+  Mpos <- length(UTL)        # output value
+  q <- as.integer(pmu * Mpos + 0.5)
+  dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
-  ind   <- as.integer(mean(ind)+0.5)
-    ylow  <- UTL[ind]
-    yhigh <- UTL[ind+q]
-    plow  <- (ind)/Mpos
-    phigh <- (ind+q)/Mpos
+  ind   <- as.integer(mean(ind) + 0.5)
+  ylow  <- UTL[ind]          # output value
+  yhigh <- UTL[ind + q]      # output value
+  plow  <- (ind) / Mpos      # output value
+  phigh <- (ind + q) / Mpos  # output value
   
   return(
     list(
@@ -289,7 +289,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   pmu  <- 0.95
   
   # number of Monte Carlo trials
-  M    <- max(100/(1-pmu), 1e4)
+  M    <- max(100 / (1 - pmu), 1e4)
   
   # number of significant decimal digits regarded
   # as meaningful in the numerical value of UTL
@@ -301,9 +301,9 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   
   # coverage factor for quantiles
   UT   <- qt(pexp,
-             df = N-1,
-             ncp = sqrt(N)*qnorm(1-ueft)
-             )/sqrt(N)
+             df = N - 1,
+             ncp = sqrt(N) * qnorm(1 - ueft)
+             ) / sqrt(N)
 
   # create data frame
   Xdf  <- data.frame(
@@ -313,7 +313,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   )
 
   # keep only the detects
-  Xdf  <- Xdf[detects==TRUE,]
+  Xdf  <- Xdf[detects == TRUE, ]
   Ndet <- nrow(Xdf)
   
   # initialize counter for number of iterations
@@ -329,7 +329,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     # generate M times normal distribution around the detects in c
     X <- data.frame(
       matrix(
-        rnorm(M*Ndet, mean = Xdf$xk, sd = Xdf$CVt*Xdf$xk),
+        rnorm(M * Ndet, mean = Xdf$xk, sd = Xdf$CVt * Xdf$xk),
         ncol = Ndet, byrow = TRUE
         )
       )
@@ -353,7 +353,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     #   1. sort rows in ascending order
     #   2. linear regression
     #   3. GM = intercept and GSD = slope
-    #   4. UTL = GM*GSD^UT
+    #   4. UTL = GM * GSD^UT
     ##########################################################################################
     # Sort the data in ascending order to obtain the order statistics
     X <- as.data.frame(t(apply(X, 1, sort)))
@@ -361,7 +361,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   
     # Blom's rankit
     # Pk = (k-a)/(n+1-2a) with a=3/8
-    zk <- qnorm((((N-Ndet+1):N) - 3/8) / (N + 1/4))
+    zk <- qnorm((((N - Ndet + 1):N) - 3/8) / (N + 1/4))
   
     # Matrix Formulation of the Multiple Linear Regression (MLR) Model
     # Linear regression iaw En 689 Annex H
@@ -388,7 +388,7 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     # GSDr  <- exp(MLRcoefs[,2])
     GMr   <- exp(MLRcoefs$AMr)
     GSDr  <- exp(MLRcoefs$ASDr)
-    UTL   <- as.double(GMr*GSDr^UT)
+    UTL   <- as.double(GMr * GSDr^UT)
   
     ##########################################################################################
     # Statistics of UTL
@@ -398,28 +398,28 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
     ##########################################################################################
     yest <- mean(UTL)
     uy   <- sd(UTL)
-    ycv  <- uy/yest
+    ycv  <- uy / yest
     Mpos <- length(UTL)
     
     # index for coverage width in output vector
-    q <- as.integer(pmu*Mpos+0.5)
+    q <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
     UTL   <- as.double(sort(UTL, decreasing = FALSE))
-    dy    <- UTL[(q+1):Mpos] - UTL[1:(Mpos-q)]
+    dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
     
     # minimum width of the coverage interval
     dymin <- min(dy)
     
     # find index of interval with minimum width
     ind   <- which(dy == dymin)
-    ind   <- as.integer(mean(ind)+0.5)
+    ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
     ylow  <- UTL[ind]
-    yhigh <- UTL[ind+q]
+    yhigh <- UTL[ind + q]
     # associated p-values
-    plow  <- (ind)/Mpos
-    phigh <- (ind+q)/Mpos
+    plow  <- (ind) / Mpos
+    phigh <- (ind + q) / Mpos
     
     # add results of iteration to list
     mclist <- append(mclist, list(list(
@@ -447,18 +447,18 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
 
     # standard error of the h values of yest, ycv, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
-    yest_se  <- sd(sapply(mclist, `[[`, "yest" ))/sqrt(h)
-    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  ))/sqrt(h)
+    yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
+    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  )) / sqrt(h)
     # ycv is not in same order of magnitude as the rest -> use uy
-    uy_se    <- sd(sapply(mclist, `[[`, "uy"   ))/sqrt(h)
-    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" ))/sqrt(h)
-    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh"))/sqrt(h)
+    uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
+    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
+    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
     # Check if the tolerance condition is met
     if (2 * yest_se  < delta &&
         2 * uy_se    < delta &&
         2 * ylow_se  < delta &&
-        2 * yhigh_se < delta ) {
+        2 * yhigh_se < delta) {
       break
     }
     
@@ -474,19 +474,19 @@ utl.ros.mc <- function(c, detects, CVt, ndig = 2) {
   # endresult based on all the h*M generated samples
   UTL  <- unlist(lapply(mclist, `[[`, "Y"))
   UTL  <- as.double(sort(UTL, decreasing = FALSE))
-    yest <- mean(UTL)
+  yest <- mean(UTL)          # output value
   uy   <- sd(UTL)
-    ycv  <- uy/yest
-    Mpos <- length(UTL)
-  q <- as.integer(pmu*Mpos+0.5)
-  dy    <- UTL[(q+1):Mpos] - UTL[1:(Mpos-q)]
+  ycv  <- uy / yest          # output value
+  Mpos <- length(UTL)        # output value
+  q <- as.integer(pmu * Mpos + 0.5)
+  dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
-  ind   <- as.integer(mean(ind)+0.5)
-    ylow  <- UTL[ind]
-    yhigh <- UTL[ind+q]
-    plow  <- (ind)/Mpos
-    phigh <- (ind+q)/Mpos
+  ind   <- as.integer(mean(ind) + 0.5)
+  ylow  <- UTL[ind]          # output value
+  yhigh <- UTL[ind + q]      # output value
+  plow  <- (ind) / Mpos      # output value
+  phigh <- (ind + q) / Mpos  # output value
   
   return(
     list(
