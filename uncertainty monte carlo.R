@@ -12,9 +12,18 @@
 # Theo Scheffers  TSAC           theo.scheffers@tsac.nl
 # Peter van Balen PreventPartner peter.van.balen@preventpartner.nl
 ##########################################################################################
+# 07/08/2024
+# added parameters ueft, pexp and pmu to input, with EN689 defaults
+# remains compatible with previous versions
+# utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.ros.mc(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# 
 # 28/07/2024
 # added adaptive procedure to adapt number of trials 
 # to desired number of significant decimal digits
+# utl.mc(twa, CVt, ndig = 2)
+# utl.ros.mc(twa, detects, CVt, ndig = 2)
+# remains compatible with previous versions
 # 
 # 23/07/2024
 # added p-values plow and phigh to output
@@ -33,8 +42,8 @@
 # frequentist approach
 # see description below of input and output variables
 ##########################################################################################
-# utl.mc(twa, CVt)
-# utl.ros.mc(twa, detects, CVt)
+# utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.ros.mc(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 # 
 # input variables
 # twa     : numeric vector of 8h time-weighted exposure
@@ -52,6 +61,9 @@
 #           as meaningful in the numerical value of UTL
 #           ndig = 2  computing time is in the order of seconds
 #           ndig = 3  computing time is in the order of minutes
+# ueft    : upper exceedance fraction threshold for exposure
+# pexp    : 1-sided coverage level for exposure
+# pmu     : 2-sided coverage level for measurement uncertainty
 # 
 # output variables
 # yest : estimate of Y, obtained as the average of 
@@ -83,31 +95,17 @@
 # mc <- utl.mc(twa, CVt)
 ######################################################################
 
-utl.mc <- function(twa, CVt, ndig = 2) {
-  # coverage level for exposure
-  pexp <- 0.70
-  
-  # upper exceedance fraction threshold for exposure
-  ueft <- 0.05
-  
-  # coverage level for measurement uncertainty
-  pmu  <- 0.95
-  
+utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
   M    <- max(100 / (1 - pmu), 1e4)
-  
-  # number of significant decimal digits regarded
-  # as meaningful in the numerical value of UTL
-  # ndig <- 3 # computing time is in the order of minutes
-  # ndig <- 2 # computing time is in the order of seconds
   
   # number of input quantities
   N    <- length(twa)
   
   # coverage factor for quantiles
-  UT   <- qt(pexp,
-             df = N - 1,
+  UT   <- qt(p   = pexp,
+             df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
              ) / sqrt(N)
   
@@ -278,34 +276,21 @@ utl.mc <- function(twa, CVt, ndig = 2) {
 # mc <- utl.ros.mc(twa, detects, CVt)
 ##########################################################################################
   
-utl.ros.mc <- function(twa, detects, CVt, ndig = 2) {
-  # coverage level for exposure
-  pexp <- 0.70
-  
-  # upper exceedance fraction threshold for exposure
-  ueft <- 0.05
-  
-  # coverage level for measurement uncertainty
-  pmu  <- 0.95
-  
+utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # number of Monte Carlo trials
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
   M    <- max(100 / (1 - pmu), 1e4)
-  
-  # number of significant decimal digits regarded
-  # as meaningful in the numerical value of UTL
-  # ndig <- 3 # computing time is in the order of minutes
-  # ndig <- 2 # computing time is in the order of seconds
   
   # number of input quantities
   N    <- length(twa)
   
   # coverage factor for quantiles
-  UT   <- qt(pexp,
-             df = N - 1,
+  UT   <- qt(p   = pexp,
+             df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
              ) / sqrt(N)
 
-  # create data frame
+  # put dataset in data frame for computational purposes
   Xdf  <- data.frame(
     xk = twa,
     CVt = CVt,
