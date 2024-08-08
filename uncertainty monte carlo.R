@@ -12,6 +12,11 @@
 # Theo Scheffers  TSAC           theo.scheffers@tsac.nl
 # Peter van Balen PreventPartner peter.van.balen@preventpartner.nl
 ##########################################################################################
+# 08/08/2024
+# added data frame to output with characteristic quantiles
+# of uncertainty distribution of UTL
+# for research purposes
+# 
 # 07/08/2024
 # added parameters ueft, pexp and pmu to input, with EN689 defaults
 # remains compatible with previous versions
@@ -71,13 +76,24 @@
 # ycv  : relative standard uncertainty associated 
 #        with ~ yest
 # ylow : left-hand endpoint of a coverage interval 
-#        for Y
+#        for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
 # yhigh: right-hand endpoint of a coverage interval 
-#        for Y
-# plow : p-value for ylow 
-# phigh: p-value for yhigh 
+#        for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
+# plow : p-value for ylow  (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
+# phigh: p-value for yhigh (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
+# yq   : characteristic quantiles for research purposes
+#        p-values:
+#        0.000 minimum y-value of Monte Carlo trials
+#        plow  ══════╗
+#        0.025 ──────╬───┐
+#        0.050 ──┐   ║   │  coverage interval
+#        0.500  90% 95% 95% of measurement 
+#        0.950 ──┘   ║   |  uncertainty
+#        phigh ══════╝   |
+#        0.975 ──────────┘
+#        1.000 maximum y-value of Monte Carlo trials
 # Mpos : number of Monte Carlo trials with positive
-#        values for Y (=UTL)
+#        values for Y (= UTL)
 # ndig : number of significant decimal digits regarded
 #        as meaningful in the numerical value of UTL
 #        - is same as the input value
@@ -88,11 +104,14 @@
 #        ("confidence limit" is used for the mean)
 ##########################################################################################
 # test values used during development (cottondust)
-# twa <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
-# CVt <- c(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
-# CVt <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
+# twa  <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
+# CVt  <- c(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
+# CVt  <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
+# ueft <- 0.05
+# pexp <- 0.70
+# pmu  <- 0.95
 # 
-# mc <- utl.mc(twa, CVt)
+# mc <- utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 ######################################################################
 
 utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
@@ -251,6 +270,22 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
+  prob  <- sort(
+    c(signif(c(plow, phigh), digits = ndig), 
+      c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
+    ))
+  yq    <- (
+    quantile(
+      x     = UTL,
+      probs = prob,
+      names = TRUE
+    )
+  )
+  yq <- data.frame(
+    "p"   = prob,
+    "UTL" = signif(yq,   digits = ndig),
+    row.names = format(prob)
+  )
   
   return(
     list(
@@ -260,6 +295,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = ndig),
       phigh = signif(phigh, digits = ndig),
+      yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
     )
@@ -272,6 +308,9 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
 # detects <- c(FALSE,  TRUE, FALSE,  TRUE,  TRUE,  TRUE,  TRUE,  TRUE,  FALSE, TRUE)
 # CVt     <- c( 0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15)
 # CVt     <- c( 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00)
+# ueft    <- 0.05
+# pexp    <- 0.70
+# pmu     <- 0.95
 # 
 # mc <- utl.ros.mc(twa, detects, CVt)
 ##########################################################################################
@@ -473,6 +512,22 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
+  prob  <- sort(
+    c(signif(c(plow, phigh), digits = ndig), 
+      c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
+    ))
+  yq    <- (
+    quantile(
+      x     = UTL,
+      probs = prob,
+      names = TRUE
+    )
+  )
+  yq <- data.frame(
+    "p"   = prob,
+    "UTL" = signif(yq,   digits = ndig),
+    row.names = format(prob)
+  )
   
   return(
     list(
@@ -482,6 +537,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = ndig),
       phigh = signif(phigh, digits = ndig),
+      yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
     )
