@@ -110,6 +110,7 @@
 # ueft <- 0.05
 # pexp <- 0.70
 # pmu  <- 0.95
+# ndig <- 2
 # 
 # mc <- utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 ######################################################################
@@ -133,7 +134,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   
   # Initialize the list to store results of each iteration
   mclist <- list()
-
+  
   repeat {
     ##########################################################################################
     # Generation of input distributions
@@ -238,10 +239,10 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
     # Check if the tolerance condition is met
-    if (2 * yest_se  < delta &&
-        2 * uy_se    < delta &&
-        2 * ylow_se  < delta &&
-        2 * yhigh_se < delta) {
+    if (2 * yest_se  <= delta &&
+        2 * uy_se    <= delta &&
+        2 * ylow_se  <= delta &&
+        2 * yhigh_se <= delta) {
       break
     }
     
@@ -270,10 +271,10 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob  <- sort(
-    c(signif(c(plow, phigh), digits = ndig), 
+  prob  <- unique(sort(
+    c(signif(c(plow, phigh), digits = max(ndig, 3)), 
       c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
-    ))
+    )))
   yq    <- (
     quantile(
       x     = UTL,
@@ -293,8 +294,8 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       ycv   = signif(ycv,   digits = ndig),
       ylow  = signif(ylow,  digits = ndig),
       yhigh = signif(yhigh, digits = ndig),
-      plow  = signif(plow,  digits = ndig),
-      phigh = signif(phigh, digits = ndig),
+      plow  = signif(plow,  digits = max(ndig, 3)),
+      phigh = signif(phigh, digits = max(ndig, 3)),
       yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
@@ -311,6 +312,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
 # ueft    <- 0.05
 # pexp    <- 0.70
 # pmu     <- 0.95
+# ndig <- 2
 # 
 # mc <- utl.ros.mc(twa, detects, CVt)
 ##########################################################################################
@@ -335,7 +337,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     CVt = CVt,
     detects = detects
   )
-
+  
   # keep only the detects
   Xdf  <- Xdf[detects == TRUE, ]
   Ndet <- nrow(Xdf)
@@ -480,10 +482,10 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
     # Check if the tolerance condition is met
-    if (2 * yest_se  < delta &&
-        2 * uy_se    < delta &&
-        2 * ylow_se  < delta &&
-        2 * yhigh_se < delta) {
+    if (2 * yest_se  <= delta &&
+        2 * uy_se    <= delta &&
+        2 * ylow_se  <= delta &&
+        2 * yhigh_se <= delta) {
       break
     }
     
@@ -512,10 +514,10 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob  <- sort(
-    c(signif(c(plow, phigh), digits = ndig), 
+  prob  <- unique(sort(
+    c(signif(c(plow, phigh), digits = max(ndig, 3)), 
       c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
-    ))
+    )))
   yq    <- (
     quantile(
       x     = UTL,
@@ -535,8 +537,8 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       ycv   = signif(ycv,   digits = ndig),
       ylow  = signif(ylow,  digits = ndig),
       yhigh = signif(yhigh, digits = ndig),
-      plow  = signif(plow,  digits = ndig),
-      phigh = signif(phigh, digits = ndig),
+      plow  = signif(plow,  digits = max(ndig, 3)),
+      phigh = signif(phigh, digits = max(ndig, 3)),
       yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
