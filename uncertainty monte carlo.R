@@ -12,6 +12,9 @@
 # Theo Scheffers  TSAC           theo.scheffers@tsac.nl
 # Peter van Balen PreventPartner peter.van.balen@preventpartner.nl
 ##########################################################################################
+# 15/08/2024
+# added classic symmetric confidence bounds
+# 
 # 08/08/2024
 # added data frame to output with characteristic quantiles
 # of uncertainty distribution of UTL
@@ -116,6 +119,10 @@
 ######################################################################
 
 utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+  # classic symmetric probabilities for confidence interval
+  plowsym  <- (1 - pmu) / 2
+  phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
+  
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
   M    <- max(100 / (1 - pmu), 1e4)
@@ -196,6 +203,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     dymin <- min(dy)
     
     # find index of interval with minimum width
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 7.7.2
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
@@ -205,6 +213,18 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     plow  <- (ind) / Mpos
     phigh <- (ind + q) / Mpos
     
+    # classic symmetric confidence bounds
+    ylowsym  <- quantile(
+      x      = UTL,
+      probs  = plowsym,
+      names  = FALSE
+    )
+    yhighsym <- quantile(
+      x      = UTL,
+      probs  = phighsym,
+      names  = FALSE
+    )
+
     # add results of iteration to list
     mclist <- append(mclist, list(list(
       Y     = UTL,
@@ -213,6 +233,8 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       ycv   = ycv,
       ylow  = ylow,
       yhigh = yhigh,
+      ylowsym  = ylowsym,
+      yhighsym = yhighsym,
       Mpos  = Mpos
     )))
     
@@ -247,7 +269,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     }
     
     # avoid runaway
-    if (h > 2000) {
+    if (h >= 2000) {
       break
     }
     
@@ -271,22 +293,27 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob  <- unique(sort(
-    c(signif(c(plow, phigh), digits = max(ndig, 3)), 
-      c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
+  prob <- unique(sort(
+    c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
+      signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
+      c(0.000, 0.500, 1.000)
     )))
-  yq    <- (
-    quantile(
-      x     = UTL,
-      probs = prob,
-      names = TRUE
-    )
+  yq       <- quantile(
+    x      = UTL,
+    probs  = prob,
+    names  = FALSE,
+    digits = ndig
   )
-  yq <- data.frame(
-    "p"   = prob,
-    "UTL" = signif(yq,   digits = ndig),
+  dUTL     <- density(UTL)
+  dUTLsub  <- approx(dUTL$x, dUTL$y, xout = yq)$y
+  yq       <- data.frame(       # output value
+    "p"    = prob,
+    "d"    = signif(dUTLsub, digits = max(ndig, 3)),
+    "UTL"  = signif(yq     , digits = ndig),
     row.names = format(prob)
   )
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
   
   return(
     list(
@@ -296,6 +323,10 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = max(ndig, 3)),
       phigh = signif(phigh, digits = max(ndig, 3)),
+      ylowsym  = signif(ylowsym,  digits = ndig),
+      yhighsym = signif(yhighsym, digits = ndig),
+      plowsym  = signif(plowsym,  digits = max(ndig, 3)),
+      phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
@@ -318,6 +349,10 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
 ##########################################################################################
   
 utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+  # classic symmetric probabilities for confidence interval
+  plowsym  <- (1 - pmu) / 2
+  phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
+  
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
   M    <- max(100 / (1 - pmu), 1e4)
@@ -439,6 +474,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     dymin <- min(dy)
     
     # find index of interval with minimum width
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 7.7.2
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
@@ -448,6 +484,18 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     plow  <- (ind) / Mpos
     phigh <- (ind + q) / Mpos
     
+    # classic symmetric confidence bounds
+    ylowsym  <- quantile(
+      x      = UTL,
+      probs  = plowsym,
+      names  = FALSE
+    )
+    yhighsym <- quantile(
+      x      = UTL,
+      probs  = phighsym,
+      names  = FALSE
+    )
+    
     # add results of iteration to list
     mclist <- append(mclist, list(list(
       Y     = UTL,
@@ -456,6 +504,8 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       ycv   = ycv,
       ylow  = ylow,
       yhigh = yhigh,
+      ylowsym  = ylowsym,
+      yhighsym = yhighsym,
       Mpos  = Mpos
     )))
     
@@ -490,7 +540,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     }
     
     # avoid runaway
-    if (h > 2000) {
+    if (h >= 2000) {
       break
     }
     
@@ -514,22 +564,26 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   yhigh <- UTL[ind + q]      # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob  <- unique(sort(
-    c(signif(c(plow, phigh), digits = max(ndig, 3)), 
-      c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
+  prob <- unique(sort(
+    c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
+      signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
+      c(0.000, 0.500, 1.000)
     )))
-  yq    <- (
-    quantile(
-      x     = UTL,
-      probs = prob,
-      names = TRUE
-    )
+  yq       <- quantile(
+    x      = UTL,
+    probs  = prob,
+    names  = FALSE
   )
-  yq <- data.frame(
-    "p"   = prob,
-    "UTL" = signif(yq,   digits = ndig),
+  dUTL     <- density(UTL)
+  dUTLsub  <- approx(dyq$x, dyq$y, xout = yq)$y
+  yq <- data.frame(          # output value
+    "p"    = prob,
+    "d"    = signif(dUTLsub, digits = max(ndig, 3)),
+    "UTL"  = signif(yq     , digits = ndig),
     row.names = format(prob)
   )
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
   
   return(
     list(
@@ -539,6 +593,10 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = max(ndig, 3)),
       phigh = signif(phigh, digits = max(ndig, 3)),
+      ylowsym  = signif(ylowsym,  digits = ndig),
+      yhighsym = signif(yhighsym, digits = ndig),
+      plowsym  = signif(plowsym,  digits = max(ndig, 3)),
+      phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
       Mpos  = Mpos,
       ndig  = ndig
