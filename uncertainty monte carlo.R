@@ -13,6 +13,9 @@
 # Peter van Balen PreventPartner peter.van.balen@preventpartner.nl
 ##########################################################################################
 # 15/08/2024
+# added the distribution of the output quantity Y to output
+# 
+# 15/08/2024
 # added classic symmetric confidence bounds
 # 
 # 08/08/2024
@@ -328,6 +331,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       plowsym  = signif(plowsym,  digits = max(ndig, 3)),
       phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
+      Y     = UTL,
       Mpos  = Mpos,
       ndig  = ndig
     )
@@ -598,6 +602,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       plowsym  = signif(plowsym,  digits = max(ndig, 3)),
       phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
+      Y     = UTL,
       Mpos  = Mpos,
       ndig  = ndig
     )
