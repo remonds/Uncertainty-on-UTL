@@ -579,7 +579,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     names  = FALSE
   )
   dUTL     <- density(UTL)
-  dUTLsub  <- approx(dyq$x, dyq$y, xout = yq)$y
+  dUTLsub  <- approx(dUTL$x, dUTL$y, xout = yq)$y
   yq <- data.frame(          # output value
     "p"    = prob,
     "d"    = signif(dUTLsub, digits = max(ndig, 3)),
