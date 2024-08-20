@@ -299,7 +299,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   prob <- unique(sort(
     c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
       signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
-      c(0.000, 0.500, 1.000)
+      c(0.000, 0.050, 0.500, 0.950 , 1.000)
     )))
   yq       <- quantile(
     x      = UTL,
@@ -571,7 +571,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   prob <- unique(sort(
     c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
       signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
-      c(0.000, 0.500, 1.000)
+      c(0.000, 0.050, 0.500, 0.950, 1.000)
     )))
   yq       <- quantile(
     x      = UTL,
