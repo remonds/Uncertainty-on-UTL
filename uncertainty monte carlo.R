@@ -333,7 +333,8 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       yq    = yq,
       Y     = UTL,
       Mpos  = Mpos,
-      ndig  = ndig
+      ndig  = ndig,
+      tolerance = delta
     )
   )
 }
@@ -604,7 +605,8 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       yq    = yq,
       Y     = UTL,
       Mpos  = Mpos,
-      ndig  = ndig
+      ndig  = ndig,
+      tolerance = delta
     )
   )
 }
