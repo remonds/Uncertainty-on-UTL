@@ -69,7 +69,7 @@
 # detects : logical vector representing detects (TRUE) 
 #           and nondetects (FALSE) 
 # ndig    : number of significant decimal digits regarded
-#           as meaningful in the numerical value of UTL
+#           as meaningful in a numerical value
 #           ndig = 2  computing time is in the order of seconds
 #           ndig = 3  computing time is in the order of minutes
 # ueft    : upper exceedance fraction threshold for exposure
@@ -104,8 +104,8 @@
 #        as meaningful in the numerical value of UTL
 #        - is same as the input value
 ##########################################################################################
-# Y    : (scalar) output quantity, regarded as a 
-#        random variable
+# Y    : (scalar) output quantity, regarded as a random variable
+#        = UTL
 #        = 70% one-sided upper tolerance limit of Q95 (UTL95,70)
 #        ("confidence limit" is used for the mean)
 ##########################################################################################
@@ -122,34 +122,53 @@
 ######################################################################
 
 utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
+  # 7.3   Sampling from probability distributions
+  # 7.4   Evaluation of the model
+  # 7.5   Discrete representation of the distribution function for the output quantity
+  # 7.6   Estimate of the output quantity and the associated standard uncertainty
+  # 7.7   Coverage interval for the output quantity
+  # 7.9   Adaptive Monte Carlo procedure
+  # 7.9.2 Numerical tolerance associated with a numerical value
+  # 7.9.4 Adaptive procedure
+  
+  # number of significant decimal digits
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
+  # ndig = appropriate small positive integer (input value)
+  
   # classic symmetric probabilities for confidence interval
+  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
   plowsym  <- (1 - pmu) / 2
   phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
   
   # number of Monte Carlo trials
-  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
   M    <- max(100 / (1 - pmu), 1e4)
   
   # number of input quantities
   N    <- length(twa)
   
   # coverage factor for quantiles
+  # coefficient of model
+  # put outside of loop to reduce calculation time
   UT   <- qt(p   = pexp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
              ) / sqrt(N)
   
-  # initialize counter for number of iterations
-  h    <- 1
-  
   # Initialize the list to store results of each iteration
   mclist <- list()
+  
+  # initialize counter for number of iterations
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 c)
+  h    <- 1
   
   repeat {
     ##########################################################################################
     # Generation of input distributions
     ##########################################################################################
     # generate M times normal distribution around twa
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.3 Sampling from probability distributions
     X <- data.frame(
       matrix(
         rnorm(M * N, mean = twa, sd = CVt * twa),
@@ -164,45 +183,60 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     # - it could perhaps distort in some way the shape of the 
     #   distribution profile
     # - might need some refinement
+    # store in X to reduce memory usage
     X <- X[apply(X, 1, function(row) all(row > 0)), ]
     
     # Transform to the normally distributed space
     # store log(Xpos) to reduce calculation time a bit
+    # store in X to reduce memory usage
     X <- log(X)
     
     ##########################################################################################
     # Propagation of the input distributions through the model
     # model: calculate by row
     #   1. GM and GSD
-    #   2. UTL = GM * GSD^UT
+    #   2. Y = UTL = GM * GSD^UT
     ##########################################################################################
-    # Transform back to the lognormally distributed space and
-    # propagate the input distributions through the model
-    # The model UTL=GM*GSD^UT is iaw EN 689 Annex F
+    # Propagate the input distributions through the model ------- apply()
+    # Transform back to the lognormally distributed space and --- exp()
+    # Finalize propagation through the model -------------------- Y
+    # The model Y=UTL=GM*GSD^UT is iaw EN 689 Annex F
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.4 Evaluation of the model
     # GM <- exp(rowMeans(X))
-    GM   <- exp(apply(X, 1, mean))
-    GSD  <- exp(apply(X, 1, sd  ))
-    UTL  <- as.double(GM * GSD^UT)
+    GM  <- exp(apply(X, 1, mean))
+    GSD <- exp(apply(X, 1, sd  ))
+    Y   <- as.double(GM * GSD^UT)
     
     ##########################################################################################
-    # Statistics of UTL
+    # Statistics of Y
     #   1. mean
     #   2. CV
     #   3. lower and upper bounds (endpoints) of coverage interval with minimum width
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 e)
     ##########################################################################################
-    yest  <- mean(UTL)
-    uy    <- sd(UTL)
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.6
+    # estimate y of Y and the standard uncertainty u(y) associated with y
+    yest  <- mean(Y)
+    uy    <- sd(Y)
     cvy   <- uy / yest
-    Mpos  <- length(UTL)
     
+    Mpos  <- length(Y)
+    
+    # sort the model values provided by MCM into non-decreasing order
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 e), 7.5.1 a)
+    # discrete representation of the distribution function for the output quantity Y
+    Y     <- as.double(sort(Y, decreasing = FALSE))
+
     # index for coverage width in output vector
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     q     <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
-    UTL   <- as.double(sort(UTL, decreasing = FALSE))
-    dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
+    dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
     # minimum width of the coverage interval
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dymin <- min(dy)
     
     # find index of interval with minimum width
@@ -210,27 +244,28 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
-    ylow  <- UTL[ind]
-    yhigh <- UTL[ind + q]
+    ylow  <- Y[ind]
+    yhigh <- Y[ind + q]
     # associated p-values
     plow  <- (ind) / Mpos
     phigh <- (ind + q) / Mpos
     
+    # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
     # classic symmetric confidence bounds
     ylowsym  <- quantile(
-      x      = UTL,
+      x      = Y,
       probs  = plowsym,
       names  = FALSE
     )
     yhighsym <- quantile(
-      x      = UTL,
+      x      = Y,
       probs  = phighsym,
       names  = FALSE
     )
 
     # add results of iteration to list
     mclist <- append(mclist, list(list(
-      Y     = UTL,
+      Y     = Y,
       yest  = yest,
       uy    = uy,
       cvy   = cvy,
@@ -241,29 +276,31 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       Mpos  = Mpos
     )))
     
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 f)
     if (h < 2) {
       h <- h + 1
       next
     }
     
-    # standard deviation of h*M values of Y
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1
-    sd_y  <- sd(unlist(lapply(mclist, `[[`, "Y")))
-
-    # numerical tolerance, delta
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
-    delta    <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
-
     # standard error of the h values of yest, cvy, ylow, yhigh
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 g)
     yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
-    # cvy_se   <- sd(sapply(mclist, `[[`, "cvy"  )) / sqrt(h)
-    # cvy is not in same order of magnitude as the rest -> use uy
+
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 h)
     uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
     ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
+    # standard deviation of h*M values of Y
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
+    sd_y     <- sd(unlist(lapply(mclist, `[[`, "Y")))
+
+    # numerical tolerance, delta
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2, 7.9.4 j)
+    delta    <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
+
     # Check if the tolerance condition is met
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
     if (2 * yest_se  <= delta &&
         2 * uy_se    <= delta &&
         2 * ylow_se  <= delta &&
@@ -277,23 +314,25 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     }
     
     # Increment h if tolerance is not met, and repeat
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
     h <- h + 1
   }
 
   # endresult based on all the h*M generated samples
-  UTL   <- unlist(lapply(mclist, `[[`, "Y"))
-  UTL   <- as.double(sort(UTL, decreasing = FALSE))
-  yest  <- mean(UTL)         # output value
-  uy    <- sd(UTL)
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 l)
+  Y     <- unlist(lapply(mclist, `[[`, "Y"))
+  Y     <- as.double(sort(Y, decreasing = FALSE))
+  yest  <- mean(Y)           # output value
+  uy    <- sd(Y)
   cvy   <- uy / yest         # output value
-  Mpos  <- length(UTL)       # output value
+  Mpos  <- length(Y)         # output value
   q     <- as.integer(pmu * Mpos + 0.5)
-  dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
+  dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
   ind   <- as.integer(mean(ind) + 0.5)
-  ylow  <- UTL[ind]          # output value
-  yhigh <- UTL[ind + q]      # output value
+  ylow  <- Y[ind]            # output value
+  yhigh <- Y[ind + q]        # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
   prob <- unique(sort(
@@ -302,21 +341,21 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       c(0.000, 0.050, 0.500, 0.950 , 1.000)
     )))
   yq       <- quantile(
-    x      = UTL,
+    x      = Y,
     probs  = prob,
     names  = FALSE,
     digits = ndig
   )
-  dUTL     <- density(UTL)
-  dUTLsub  <- approx(dUTL$x, dUTL$y, xout = yq)$y
-  yq       <- data.frame(       # output value
+  dY       <- density(Y)
+  dYsub    <- approx(dY$x, dY$y, xout = yq)$y
+  yq       <- data.frame(    # output value
     "p"    = prob,
-    "d"    = signif(dUTLsub, digits = max(ndig, 3)),
-    "UTL"  = signif(yq     , digits = ndig),
+    "d"    = signif(dYsub, digits = max(ndig, 3)),
+    "Y"    = signif(yq   , digits = ndig),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$Y
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$Y
   
   return(
     list(
@@ -331,7 +370,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       plowsym  = signif(plowsym,  digits = max(ndig, 3)),
       phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
-      Y     = UTL,
+      Y     = Y,
       Mpos  = Mpos,
       ndig  = ndig,
       tolerance = delta
@@ -354,18 +393,35 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
 ##########################################################################################
   
 utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
+  # 7.3   Sampling from probability distributions
+  # 7.4   Evaluation of the model
+  # 7.5   Discrete representation of the distribution function for the output quantity
+  # 7.6   Estimate of the output quantity and the associated standard uncertainty
+  # 7.7   Coverage interval for the output quantity
+  # 7.9   Adaptive Monte Carlo procedure
+  # 7.9.2 Numerical tolerance associated with a numerical value
+  # 7.9.4 Adaptive procedure
+  
+  # number of significant decimal digits
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
+  # ndig = appropriate small positive integer (input value)
+  
   # classic symmetric probabilities for confidence interval
+  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
   plowsym  <- (1 - pmu) / 2
   phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
   
   # number of Monte Carlo trials
-  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4 Adaptive procedure
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
   M    <- max(100 / (1 - pmu), 1e4)
   
   # number of input quantities
   N    <- length(twa)
   
   # coverage factor for quantiles
+  # coefficient of model
+  # put outside of loop to reduce calculation time
   UT   <- qt(p   = pexp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
@@ -380,19 +436,23 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   
   # keep only the detects
   Xdf  <- Xdf[detects == TRUE, ]
+
+  # number of detects
   Ndet <- nrow(Xdf)
-  
-  # initialize counter for number of iterations
-  h    <- 1
   
   # Initialize the list to store results of each iteration
   mclist <- list()
+  
+  # initialize counter for number of iterations
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 c)
+  h    <- 1
   
   repeat {
     ##########################################################################################
     # Generation of input distributions
     ##########################################################################################
     # generate M times normal distribution around the detects in twa
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.3 Sampling from probability distributions
     X <- data.frame(
       matrix(
         rnorm(M * Ndet, mean = Xdf$xk, sd = Xdf$CVt * Xdf$xk),
@@ -407,19 +467,21 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     # - it could perhaps distort in some way the shape of the 
     #   distribution profile
     # - might need some refinement
+    # store in X to reduce memory usage
     X <- X[apply(X, 1, function(row) all(row > 0)), ]
     
     # Transform to the normally distributed space
     # store log(Xpos) to reduce calculation time a bit
+    # store in X to reduce memory usage
     X <- log(X)
     
     ##########################################################################################
     # Propagation of the input distributions through the model
     # model: calculate by row
     #   1. sort rows in ascending order
-    #   2. linear regression
+    #   2. linear regression of each row
     #   3. GM = intercept and GSD = slope
-    #   4. UTL = GM * GSD^UT
+    #   4. Y = UTL = GM * GSD^UT
     ##########################################################################################
     # Sort the data in ascending order to obtain the order statistics
     X <- as.data.frame(t(apply(X, 1, sort)))
@@ -431,8 +493,9 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     zk <- qnorm((((N - Ndet + 1):N) - 3/8) / (N + 1/4))
   
     # Matrix Formulation of the Multiple Linear Regression (MLR) Model
-    # Linear regression iaw En 689 Annex H
+    # Linear regression iaw EN 689 Annex H
     # For the regression, only the detects are used
+    # as the operation is performed in the normally distributed space,
     # the intercept represents the arithmetic mean (AMr)
     # the slope represents the arithmetic standard deviation (ASDr)
     # the index r indicates that the value is obtained by using
@@ -446,36 +509,48 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       slopes <- beta[2, ]
       data.frame(AMr = intercepts, ASDr = slopes)
     }
+    # Propagate the input distributions through the model ------- MLR()
     MLRcoefs <- MLR(X, zk)
     
-    # Transform back to the lognormally distributed space and
-    # propagate the input distributions through the model
-    # The model UTL=GM*GSD^UT is iaw EN 689 Annex H
+    # Transform back to the lognormally distributed space and --- exp()
+    # Finalize propagation through the model -------------------- Y
+    # The model Y=UTL=GM*GSD^UT is iaw EN 689 Annex F and H
     # GMr   <- exp(MLRcoefs[,1])
     # GSDr  <- exp(MLRcoefs[,2])
     GMr   <- exp(MLRcoefs$AMr)
     GSDr  <- exp(MLRcoefs$ASDr)
-    UTL   <- as.double(GMr * GSDr^UT)
+    Y     <- as.double(GMr * GSDr^UT)
   
     ##########################################################################################
-    # Statistics of UTL
+    # Statistics of Y
     #   1. mean
     #   2. CV
     #   3. lower and upper bounds (endpoints) of coverage interval with minimum width
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 e)
     ##########################################################################################
-    yest  <- mean(UTL)
-    uy    <- sd(UTL)
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.6
+    # estimate y of Y and the standard uncertainty u(y) associated with y
+    yest  <- mean(Y)
+    uy    <- sd(Y)
     cvy   <- uy / yest
-    Mpos  <- length(UTL)
+
+    Mpos  <- length(Y)
     
+    # sort the model values provided by MCM into non-decreasing order
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 e), 7.5.1 a)
+    # discrete representation of the distribution function for the output quantity Y
+    Y     <- as.double(sort(Y, decreasing = FALSE))
+
     # index for coverage width in output vector
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     q     <- as.integer(pmu * Mpos + 0.5)
     
     # width of the coverage interval
-    UTL   <- as.double(sort(UTL, decreasing = FALSE))
-    dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
+    dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
     # minimum width of the coverage interval
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dymin <- min(dy)
     
     # find index of interval with minimum width
@@ -483,27 +558,28 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
-    ylow  <- UTL[ind]
-    yhigh <- UTL[ind + q]
+    ylow  <- Y[ind]
+    yhigh <- Y[ind + q]
     # associated p-values
     plow  <- (ind) / Mpos
     phigh <- (ind + q) / Mpos
     
+    # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
     # classic symmetric confidence bounds
     ylowsym  <- quantile(
-      x      = UTL,
+      x      = Y,
       probs  = plowsym,
       names  = FALSE
     )
     yhighsym <- quantile(
-      x      = UTL,
+      x      = Y,
       probs  = phighsym,
       names  = FALSE
     )
     
     # add results of iteration to list
     mclist <- append(mclist, list(list(
-      Y     = UTL,
+      Y     = Y,
       yest  = yest,
       uy    = uy,
       cvy   = cvy,
@@ -514,29 +590,31 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       Mpos  = Mpos
     )))
     
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 f)
     if (h < 2) {
       h <- h + 1
       next
     }
-    
-    # standard deviation of h*M values of Y
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1
-    sd_y <- sd(unlist(lapply(mclist, `[[`, "Y")))
-    
-    # numerical tolerance, delta
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
-    delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
 
     # standard error of the h values of yest, cvy, ylow, yhigh
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 g)
     yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
-    # cvy_se   <- sd(sapply(mclist, `[[`, "cvy"  )) / sqrt(h)
-    # cvy is not in same order of magnitude as the rest -> use uy
+
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 h)
     uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
     ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
     
+    # standard deviation of h*M values of Y
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
+    sd_y <- sd(unlist(lapply(mclist, `[[`, "Y")))
+    
+    # numerical tolerance, delta
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2, 7.9.4 j)
+    delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
+    
     # Check if the tolerance condition is met
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
     if (2 * yest_se  <= delta &&
         2 * uy_se    <= delta &&
         2 * ylow_se  <= delta &&
@@ -550,23 +628,25 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     }
     
     # Increment h if tolerance is not met, and repeat
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
     h <- h + 1
   }
   
   # endresult based on all the h*M generated samples
-  UTL   <- unlist(lapply(mclist, `[[`, "Y"))
-  UTL   <- as.double(sort(UTL, decreasing = FALSE))
-  yest  <- mean(UTL)         # output value
-  uy    <- sd(UTL)
+  # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 l)
+  Y     <- unlist(lapply(mclist, `[[`, "Y"))
+  Y     <- as.double(sort(Y, decreasing = FALSE))
+  yest  <- mean(Y)           # output value
+  uy    <- sd(Y)
   cvy   <- uy / yest         # output value
-  Mpos  <- length(UTL)       # output value
+  Mpos  <- length(Y)         # output value
   q     <- as.integer(pmu * Mpos + 0.5)
-  dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
+  dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
   ind   <- as.integer(mean(ind) + 0.5)
-  ylow  <- UTL[ind]          # output value
-  yhigh <- UTL[ind + q]      # output value
+  ylow  <- Y[ind]            # output value
+  yhigh <- Y[ind + q]        # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
   prob <- unique(sort(
@@ -575,20 +655,20 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       c(0.000, 0.050, 0.500, 0.950, 1.000)
     )))
   yq       <- quantile(
-    x      = UTL,
+    x      = Y,
     probs  = prob,
     names  = FALSE
   )
-  dUTL     <- density(UTL)
-  dUTLsub  <- approx(dUTL$x, dUTL$y, xout = yq)$y
+  dY     <- density(Y)
+  dYsub  <- approx(dY$x, dY$y, xout = yq)$y
   yq <- data.frame(          # output value
     "p"    = prob,
-    "d"    = signif(dUTLsub, digits = max(ndig, 3)),
-    "UTL"  = signif(yq     , digits = ndig),
+    "d"    = signif(dYsub, digits = max(ndig, 3)),
+    "Y"    = signif(yq   , digits = ndig),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$Y
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$Y
   
   return(
     list(
@@ -603,7 +683,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       plowsym  = signif(plowsym,  digits = max(ndig, 3)),
       phighsym = signif(phighsym, digits = max(ndig, 3)),
       yq    = yq,
-      Y     = UTL,
+      Y     = Y,
       Mpos  = Mpos,
       ndig  = ndig,
       tolerance = delta
