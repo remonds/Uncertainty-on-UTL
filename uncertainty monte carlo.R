@@ -351,11 +351,11 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   yq       <- data.frame(    # output value
     "p"    = prob,
     "d"    = signif(dYsub, digits = max(ndig, 3)),
-    "Y"    = signif(yq   , digits = ndig),
+    "UTL"  = signif(yq   , digits = ndig),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$Y
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$Y
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
   
   return(
     list(
@@ -664,11 +664,11 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   yq <- data.frame(          # output value
     "p"    = prob,
     "d"    = signif(dYsub, digits = max(ndig, 3)),
-    "Y"    = signif(yq   , digits = ndig),
+    "UTL"  = signif(yq   , digits = ndig),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$Y
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$Y
+  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
+  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
   
   return(
     list(
