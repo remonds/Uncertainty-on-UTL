@@ -79,7 +79,7 @@
 # output variables
 # yest : estimate of Y, obtained as the average of 
 #        the M model values yr from a Monte Carlo run
-# ycv  : relative standard uncertainty associated 
+# cvy  : relative standard uncertainty associated 
 #        with ~ yest
 # ylow : left-hand endpoint of a coverage interval 
 #        for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
@@ -192,7 +192,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     ##########################################################################################
     yest  <- mean(UTL)
     uy    <- sd(UTL)
-    ycv   <- uy / yest
+    cvy   <- uy / yest
     Mpos  <- length(UTL)
     
     # index for coverage width in output vector
@@ -233,7 +233,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
       Y     = UTL,
       yest  = yest,
       uy    = uy,
-      ycv   = ycv,
+      cvy   = cvy,
       ylow  = ylow,
       yhigh = yhigh,
       ylowsym  = ylowsym,
@@ -254,11 +254,11 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
     delta    <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
 
-    # standard error of the h values of yest, ycv, ylow, yhigh
+    # standard error of the h values of yest, cvy, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
     yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
-    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  )) / sqrt(h)
-    # ycv is not in same order of magnitude as the rest -> use uy
+    # cvy_se   <- sd(sapply(mclist, `[[`, "cvy"  )) / sqrt(h)
+    # cvy is not in same order of magnitude as the rest -> use uy
     uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
     ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
@@ -285,7 +285,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   UTL   <- as.double(sort(UTL, decreasing = FALSE))
   yest  <- mean(UTL)         # output value
   uy    <- sd(UTL)
-  ycv   <- uy / yest         # output value
+  cvy   <- uy / yest         # output value
   Mpos  <- length(UTL)       # output value
   q     <- as.integer(pmu * Mpos + 0.5)
   dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
@@ -321,7 +321,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   return(
     list(
       yest  = signif(yest,  digits = ndig),
-      ycv   = signif(ycv,   digits = ndig),
+      cvy   = signif(cvy,   digits = ndig),
       ylow  = signif(ylow,  digits = ndig),
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = max(ndig, 3)),
@@ -465,7 +465,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     ##########################################################################################
     yest  <- mean(UTL)
     uy    <- sd(UTL)
-    ycv   <- uy / yest
+    cvy   <- uy / yest
     Mpos  <- length(UTL)
     
     # index for coverage width in output vector
@@ -506,7 +506,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
       Y     = UTL,
       yest  = yest,
       uy    = uy,
-      ycv   = ycv,
+      cvy   = cvy,
       ylow  = ylow,
       yhigh = yhigh,
       ylowsym  = ylowsym,
@@ -527,11 +527,11 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.2
     delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
 
-    # standard error of the h values of yest, ycv, ylow, yhigh
+    # standard error of the h values of yest, cvy, ylow, yhigh
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Suppl 1, 7.9.4
     yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
-    # ycv_se   <- sd(sapply(mclist, `[[`, "ycv"  )) / sqrt(h)
-    # ycv is not in same order of magnitude as the rest -> use uy
+    # cvy_se   <- sd(sapply(mclist, `[[`, "cvy"  )) / sqrt(h)
+    # cvy is not in same order of magnitude as the rest -> use uy
     uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
     ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
     yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
@@ -558,7 +558,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   UTL   <- as.double(sort(UTL, decreasing = FALSE))
   yest  <- mean(UTL)         # output value
   uy    <- sd(UTL)
-  ycv   <- uy / yest         # output value
+  cvy   <- uy / yest         # output value
   Mpos  <- length(UTL)       # output value
   q     <- as.integer(pmu * Mpos + 0.5)
   dy    <- UTL[(q + 1):Mpos] - UTL[1:(Mpos - q)]
@@ -593,7 +593,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   return(
     list(
       yest  = signif(yest,  digits = ndig),
-      ycv   = signif(ycv,   digits = ndig),
+      cvy   = signif(cvy,   digits = ndig),
       ylow  = signif(ylow,  digits = ndig),
       yhigh = signif(yhigh, digits = ndig),
       plow  = signif(plow,  digits = max(ndig, 3)),
