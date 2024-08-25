@@ -132,6 +132,11 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # 7.9.2 Numerical tolerance associated with a numerical value
   # 7.9.4 Adaptive procedure
   
+  # if CVt is omitted, then use CVt = 0
+  if(missing(CVt)) {
+    CVt <- rep(0, length(twa))
+  }
+  
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
   # ndig = appropriate small positive integer (input value)
@@ -410,6 +415,11 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   # 7.9   Adaptive Monte Carlo procedure
   # 7.9.2 Numerical tolerance associated with a numerical value
   # 7.9.4 Adaptive procedure
+  
+  # if CVt is omitted, then use CVt = 0
+  if(missing(CVt)) {
+    CVt <- rep(0, length(twa))
+  }
   
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
