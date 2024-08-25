@@ -276,8 +276,6 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
       cvy   = cvy,
       ylow  = ylow,
       yhigh = yhigh,
-      ylowsym  = ylowsym,
-      yhighsym = yhighsym,
       Mpos  = Mpos
     )))
     
@@ -598,8 +596,6 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
       cvy   = cvy,
       ylow  = ylow,
       yhigh = yhigh,
-      ylowsym  = ylowsym,
-      yhighsym = yhighsym,
       Mpos  = Mpos
     )))
     
