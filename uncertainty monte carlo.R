@@ -126,7 +126,7 @@ library(wzMisc)
 # mc <- utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 ######################################################################
 
-utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
   # 7.3   Sampling from probability distributions
   # 7.4   Evaluation of the model
@@ -136,11 +136,6 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # 7.9   Adaptive Monte Carlo procedure
   # 7.9.2 Numerical tolerance associated with a numerical value
   # 7.9.4 Adaptive procedure
-  
-  # if CVt is omitted, then use CVt = 0
-  if(missing(CVt)) {
-    CVt <- rep(0, length(twa))
-  }
   
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
@@ -410,7 +405,7 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
 # mc <- utl.ros.mc(twa, detects, CVt)
 ##########################################################################################
   
-utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
   # 7.3   Sampling from probability distributions
   # 7.4   Evaluation of the model
@@ -420,11 +415,6 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   # 7.9   Adaptive Monte Carlo procedure
   # 7.9.2 Numerical tolerance associated with a numerical value
   # 7.9.4 Adaptive procedure
-  
-  # if CVt is omitted, then use CVt = 0
-  if(missing(CVt)) {
-    CVt <- rep(0, length(twa))
-  }
   
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
