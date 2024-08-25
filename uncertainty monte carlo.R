@@ -295,9 +295,13 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
     sd_y     <- sd(unlist(lapply(mclist, `[[`, "Y")))
 
+    # number of decimal digits
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 a), 7.9.4 j)
+    ndecdig <- -(ceiling(log10(sd_y))-ndig)
+    
     # numerical tolerance, delta
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2, 7.9.4 j)
-    delta    <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 b), 7.9.4 j)
+    delta    <- 0.5 * 10^(-ndecdig)
 
     # Check if the tolerance condition is met
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
@@ -335,10 +339,10 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   yhigh <- Y[ind + q]        # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob <- unique(sort(
+  prob  <- unique(sort(
     c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
       signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
-      c(0.000, 0.050, 0.500, 0.950 , 1.000)
+      c(0.000, 0.050, 0.500, 0.950, 1.000)
     )))
   yq       <- quantile(
     x      = Y,
@@ -348,10 +352,14 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   )
   dY       <- density(Y)
   dYsub    <- approx(dY$x, dY$y, xout = yq)$y
+  ndecdig_density   <- -(ceiling(log10(min(dYsub)))-ndig)
+  if(delta == 0) {
+    ndecdig <- max(count_sigfigs(twa - floor(twa)))
+  }
   yq       <- data.frame(    # output value
     "p"    = prob,
-    "d"    = signif(dYsub, digits = max(ndig, 3)),
-    "UTL"  = signif(yq   , digits = ndig),
+    "d"    = round(dYsub, digits = ndecdig_density),
+    "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
   )
   ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
@@ -359,20 +367,20 @@ utl.mc <- function(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   
   return(
     list(
-      yest  = signif(yest,  digits = ndig),
-      cvy   = signif(cvy,   digits = ndig),
-      ylow  = signif(ylow,  digits = ndig),
-      yhigh = signif(yhigh, digits = ndig),
-      plow  = signif(plow,  digits = max(ndig, 3)),
-      phigh = signif(phigh, digits = max(ndig, 3)),
-      ylowsym  = signif(ylowsym,  digits = ndig),
-      yhighsym = signif(yhighsym, digits = ndig),
-      plowsym  = signif(plowsym,  digits = max(ndig, 3)),
-      phighsym = signif(phighsym, digits = max(ndig, 3)),
-      yq    = yq,
-      Y     = Y,
-      Mpos  = Mpos,
-      ndig  = ndig,
+      yest      = round(yest,      digits = ndecdig),
+      cvy       = round(cvy,       digits = ndecdig),
+      ylow      = round(ylow,      digits = ndecdig),
+      yhigh     = round(yhigh,     digits = ndecdig),
+      plow      = signif(plow,     digits = max(ndig, 3)),
+      phigh     = signif(phigh,    digits = max(ndig, 3)),
+      ylowsym   = round(ylowsym,   digits = ndecdig),
+      yhighsym  = round(yhighsym,  digits = ndecdig),
+      plowsym   = signif(plowsym,  digits = max(ndig, 3)),
+      phighsym  = signif(phighsym, digits = max(ndig, 3)),
+      yq        = yq,
+      Y         = Y,
+      Mpos      = Mpos,
+      ndig      = ndig,
       tolerance = delta
     )
   )
@@ -609,9 +617,13 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
     sd_y <- sd(unlist(lapply(mclist, `[[`, "Y")))
     
+    # number of decimal digits
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 a), 7.9.4 j)
+    ndecdig <- -(ceiling(log10(sd_y))-ndig)
+    
     # numerical tolerance, delta
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2, 7.9.4 j)
-    delta <- 0.5 * 10^(floor(log10(sd_y)) + 1 - ndig)
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 b), 7.9.4 j)
+    delta <- 0.5 * 10^(-ndecdig)
     
     # Check if the tolerance condition is met
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
@@ -649,7 +661,7 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   yhigh <- Y[ind + q]        # output value
   plow  <- (ind) / Mpos      # output value
   phigh <- (ind + q) / Mpos  # output value
-  prob <- unique(sort(
+  prob  <- unique(sort(
     c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
       signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
       c(0.000, 0.050, 0.500, 0.950, 1.000)
@@ -661,10 +673,14 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   )
   dY     <- density(Y)
   dYsub  <- approx(dY$x, dY$y, xout = yq)$y
+  ndecdig_density <- -(ceiling(log10(min(dYsub)))-ndig)
+  if(delta == 0) {
+    ndecdig <- max(count_sigfigs(twa - floor(twa)))
+  }
   yq <- data.frame(          # output value
     "p"    = prob,
-    "d"    = signif(dYsub, digits = max(ndig, 3)),
-    "UTL"  = signif(yq   , digits = ndig),
+    "d"    = round(dYsub, digits = ndecdig_density),
+    "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
   )
   ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
@@ -672,20 +688,20 @@ utl.ros.mc <- function(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pm
   
   return(
     list(
-      yest  = signif(yest,  digits = ndig),
-      cvy   = signif(cvy,   digits = ndig),
-      ylow  = signif(ylow,  digits = ndig),
-      yhigh = signif(yhigh, digits = ndig),
-      plow  = signif(plow,  digits = max(ndig, 3)),
-      phigh = signif(phigh, digits = max(ndig, 3)),
-      ylowsym  = signif(ylowsym,  digits = ndig),
-      yhighsym = signif(yhighsym, digits = ndig),
-      plowsym  = signif(plowsym,  digits = max(ndig, 3)),
-      phighsym = signif(phighsym, digits = max(ndig, 3)),
-      yq    = yq,
-      Y     = Y,
-      Mpos  = Mpos,
-      ndig  = ndig,
+      yest      = round(yest,      digits = ndecdig),
+      cvy       = round(cvy,       digits = ndecdig),
+      ylow      = round(ylow,      digits = ndecdig),
+      yhigh     = round(yhigh,     digits = ndecdig),
+      plow      = signif(plow,     digits = max(ndig, 3)),
+      phigh     = signif(phigh,    digits = max(ndig, 3)),
+      ylowsym   = round(ylowsym,   digits = ndecdig),
+      yhighsym  = round(yhighsym,  digits = ndecdig),
+      plowsym   = signif(plowsym,  digits = max(ndig, 3)),
+      phighsym  = signif(phighsym, digits = max(ndig, 3)),
+      yq        = yq,
+      Y         = Y,
+      Mpos      = Mpos,
+      ndig      = ndig,
       tolerance = delta
     )
   )
