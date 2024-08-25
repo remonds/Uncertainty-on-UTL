@@ -109,6 +109,11 @@
 #        = 70% one-sided upper tolerance limit of Q95 (UTL95,70)
 #        ("confidence limit" is used for the mean)
 ##########################################################################################
+if (!requireNamespace("wzMisc", quietly = TRUE)) {
+  devtools::install_github("slin30/wzMisc")
+}
+library(wzMisc)
+##########################################################################################
 # test values used during development (cottondust)
 # twa  <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
 # CVt  <- c(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
