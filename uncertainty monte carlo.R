@@ -74,35 +74,60 @@
 #           ndig = 3  computing time is in the order of minutes
 # ueft    : upper exceedance fraction threshold for exposure
 # pexp    : 1-sided coverage level for exposure
-# pmu     : 2-sided coverage level for measurement uncertainty
+# pmu     : coverage level for measurement uncertainty
+#           both 1-sided and 2-sided coverage intervals
+#           will be reported
 # 
 # output variables
-# yest : estimate of Y, obtained as the average of 
-#        the M model values yr from a Monte Carlo run
-# cvy  : relative standard uncertainty associated 
-#        with ~ yest
-# ylow : left-hand endpoint of a coverage interval 
-#        for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
-# yhigh: right-hand endpoint of a coverage interval 
-#        for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
-# plow : p-value for ylow  (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
-# phigh: p-value for yhigh (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008)
-# yq   : characteristic quantiles for research purposes
-#        p-values:
-#        0.000 minimum y-value of Monte Carlo trials
-#        plow  ══════╗
-#        0.025 ──────╬───┐
-#        0.050 ──┐   ║   │  coverage interval
-#        0.500  90% 95% 95% of measurement 
-#        0.950 ──┘   ║   |  uncertainty
-#        phigh ══════╝   |
-#        0.975 ──────────┘
-#        1.000 maximum y-value of Monte Carlo trials
-# Mpos : number of Monte Carlo trials with positive
-#        values for Y (= UTL)
-# ndig : number of significant decimal digits regarded
-#        as meaningful in the numerical value of UTL
-#        - is same as the input value
+# yest     : estimate of Y, obtained as the average of 
+#            the M model values yr from a Monte Carlo run
+# cvy      : relative standard uncertainty associated 
+#            with yest
+# ylow2gum : left-hand endpoint of a 2-sided coverage interval 
+#            for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2)
+#            with approximately the same density as yhigh2gum
+# yhigh2gum: right-hand endpoint of a 2-sided coverage interval 
+#            for Y (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2)
+#            with approximately the same density as ylow2gum
+# plow2gum : p-value for ylow2gum
+#            (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2)
+#            with approximately the same probability density as phigh2gum
+# phigh2gum: p-value for yhigh2gum
+#            (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2)
+#            with approximately the same probability density as plow2gum
+# 
+# ylow2sym : left-hand endpoint of a 2-sided coverage interval 
+#            for Y 
+# yhigh2sym: right-hand endpoint of a 2-sided coverage interval 
+#            for Y 
+# plow2sym : p-value for ylow2gum
+#            with phigh2sym = 1 - plow2sym
+# phigh2sym: p-value for yhigh2gum
+#            with plow2sym = 1 - phigh2sym
+# 
+# ylow1    : left-hand endpoint of a 1-sided coverage interval 
+#            for Y (Leidel, Busch and Lynch 1977, 4.1)
+# yhigh1   : right-hand endpoint of a 1-sided coverage interval 
+#            for Y (Leidel, Busch and Lynch 1977, 4.1)
+# plow1    : p-value for ylow1
+# phigh1   : p-value for yhigh1
+# 
+# yq       : characteristic quantiles (for research purposes)
+#  p-values:
+#  0.000                 │       minimum y-value of Monte Carlo trials
+#        plow2gum  ══════╪═══╗
+#  0.025 plow2sym  ──────┼───╫───┐
+#  0.050 plow1     ──┐   │   ║   │  coverage intervals
+#  0.500            95% 95% 95% 95% of measurement 
+#  0.950 phigh1    ──┼───┘   ║   |  uncertainty
+#        phigh2gum ══╪═══════╝   |
+#  0.975 phigh2sym ──┼───────────┘
+#  1.000             │           maximum y-value of Monte Carlo trials
+# Mpos     : number of Monte Carlo trials with positive
+#            values for Y (= UTL)
+# ndig     : number of significant decimal digits regarded
+#            as meaningful in the numerical value of UTL
+#            - is same as the input value
 ##########################################################################################
 # Y    : (scalar) output quantity, regarded as a random variable
 #        = UTL
@@ -140,11 +165,6 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
   # ndig = appropriate small positive integer (input value)
-  
-  # classic symmetric probabilities for confidence interval
-  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
-  plowsym  <- (1 - pmu) / 2
-  phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
   
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
@@ -244,39 +264,26 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dymin <- min(dy)
     
-    # find index of interval with minimum width
+    # find index of 2-sided interval with minimum width
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 7.7.2
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
-    ylow  <- Y[ind]
-    yhigh <- Y[ind + q]
+    ylow2gum  <- Y[ind]
+    yhigh2gum <- Y[ind + q]
     # associated p-values
-    plow  <- (ind) / Mpos
-    phigh <- (ind + q) / Mpos
-    
-    # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
-    # classic symmetric confidence bounds
-    ylowsym  <- quantile(
-      x      = Y,
-      probs  = plowsym,
-      names  = FALSE
-    )
-    yhighsym <- quantile(
-      x      = Y,
-      probs  = phighsym,
-      names  = FALSE
-    )
+    plow2gum  <- (ind) / Mpos
+    phigh2gum <- (ind + q) / Mpos
 
     # add results of iteration to list
     mclist <- append(mclist, list(list(
-      Y     = Y,
-      yest  = yest,
-      uy    = uy,
-      cvy   = cvy,
-      ylow  = ylow,
-      yhigh = yhigh,
-      Mpos  = Mpos
+      Y         = Y,
+      yest      = yest,
+      uy        = uy,
+      cvy       = cvy,
+      ylow2gum  = ylow2gum,
+      yhigh2gum = yhigh2gum,
+      Mpos      = Mpos
     )))
     
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 f)
@@ -285,18 +292,18 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
       next
     }
     
-    # standard error of the h values of yest, cvy, ylow, yhigh
+    # standard error of the h values of yest, uy, ylow2gum, yhigh2gum
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 g)
-    yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
+    yest_se      <- sd(sapply(mclist, `[[`, "yest"     )) / sqrt(h)
 
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 h)
-    uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
-    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
-    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
+    uy_se        <- sd(sapply(mclist, `[[`, "uy"       )) / sqrt(h)
+    ylow2gum_se  <- sd(sapply(mclist, `[[`, "ylow2gum" )) / sqrt(h)
+    yhigh2gum_se <- sd(sapply(mclist, `[[`, "yhigh2gum")) / sqrt(h)
     
     # standard deviation of h*M values of Y
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
-    sd_y     <- sd(unlist(lapply(mclist, `[[`, "Y")))
+    sd_y <- sd(unlist(lapply(mclist, `[[`, "Y")))
 
     # number of decimal digits
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 a), 7.9.4 j)
@@ -308,10 +315,10 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
 
     # Check if the tolerance condition is met
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
-    if (2 * yest_se  <= delta &&
-        2 * uy_se    <= delta &&
-        2 * ylow_se  <= delta &&
-        2 * yhigh_se <= delta) {
+    if (2 * yest_se      <= delta &&
+        2 * uy_se        <= delta &&
+        2 * ylow2gum_se  <= delta &&
+        2 * yhigh2gum_se <= delta) {
       break
     }
     
@@ -338,48 +345,68 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   dymin <- min(dy)
   ind   <- which(dy == dymin)
   ind   <- as.integer(mean(ind) + 0.5)
-  ylow  <- Y[ind]            # output value
-  yhigh <- Y[ind + q]        # output value
-  plow  <- (ind) / Mpos      # output value
-  phigh <- (ind + q) / Mpos  # output value
-  prob  <- unique(sort(
-    c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
-      signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
+  ylow2gum  <- Y[ind]            # output value
+  yhigh2gum <- Y[ind + q]        # output value
+  plow2gum  <- (ind) / Mpos      # output value
+  phigh2gum <- (ind + q) / Mpos  # output value
+  plow1  <- 1 - pmu              # output value
+  phigh1 <- pmu                  # output value
+
+  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
+  # classic symmetric confidence bounds
+  plow2sym  <- (1 - pmu) / 2     # output value
+  phigh2sym <- (1 + pmu) / 2     # output value = 1 - (1 - pmu) / 2
+
+  prob <- unique(sort(
+    c(signif(c(plow2gum, phigh2gum), digits = max(ndig, 3)),
+      signif(c(plow1,    phigh1   ), digits = max(ndig, 3)), 
+      signif(c(plow2sym, phigh2sym), digits = max(ndig, 3)), 
       c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
     )))
-  yq       <- quantile(
+  yq   <- quantile(
     x      = Y,
     probs  = prob,
-    names  = FALSE,
-    digits = ndig
+    names  = FALSE
   )
   dY       <- density(Y)
   dYsub    <- approx(dY$x, dY$y, xout = yq)$y
-  ndecdig_density   <- -(ceiling(log10(min(dYsub)))-ndig)
+  ndecdig_density <- -(ceiling(log10(min(dYsub)))-ndig)
   if(delta == 0) {
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
-  yq       <- data.frame(    # output value
+  yq <- data.frame(              # output value
     "p"    = prob,
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
+  
+  # 2-sided confidence interval       [ylow1, yhigh1] confidence level pmu
+  ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
+  yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
+  
+  # Lower 1-sided confidence interval [ylow1, +∞[     confidence level pmu
+  ylow1     <- yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$UTL
+
+  # Upper 1-sided confidence interval [0, yhigh1]     confidence level pmu
+  yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
   
   return(
     list(
-      yest      = round(yest,      digits = ndecdig),
-      cvy       = round(cvy,       digits = ndecdig),
-      ylow      = round(ylow,      digits = ndecdig),
-      yhigh     = round(yhigh,     digits = ndecdig),
-      plow      = signif(plow,     digits = max(ndig, 3)),
-      phigh     = signif(phigh,    digits = max(ndig, 3)),
-      ylowsym   = round(ylowsym,   digits = ndecdig),
-      yhighsym  = round(yhighsym,  digits = ndecdig),
-      plowsym   = signif(plowsym,  digits = max(ndig, 3)),
-      phighsym  = signif(phighsym, digits = max(ndig, 3)),
+      yest      = round (yest,      digits = ndecdig),
+      cvy       = round (cvy,       digits = ndecdig),
+      ylow2gum  = round (ylow2gum,  digits = ndecdig),
+      yhigh2gum = round (yhigh2gum, digits = ndecdig),
+      plow2gum  = signif(plow2gum,  digits = max(ndig, 3)),
+      phigh2gum = signif(phigh2gum, digits = max(ndig, 3)),
+      ylow2sym  = round (ylow2sym,  digits = ndecdig),
+      yhigh2sym = round (yhigh2sym, digits = ndecdig),
+      plow2sym  = signif(plow2sym,  digits = max(ndig, 3)),
+      phigh2sym = signif(phigh2sym, digits = max(ndig, 3)),
+      ylow1     = round (ylow1,     digits = ndecdig),
+      yhigh1    = round (yhigh1,    digits = ndecdig),
+      plow1     = signif(plow1,     digits = max(ndig, 3)),
+      phigh1    = signif(phigh1,    digits = max(ndig, 3)),
       yq        = yq,
       Y         = Y,
       Mpos      = Mpos,
@@ -417,11 +444,6 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   # number of significant decimal digits
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 a)
   # ndig = appropriate small positive integer (input value)
-  
-  # classic symmetric probabilities for confidence interval
-  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
-  plowsym  <- (1 - pmu) / 2
-  phighsym <- (1 + pmu) / 2 # = 1 - (1 - pmu) / 2
   
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
@@ -564,39 +586,26 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dymin <- min(dy)
     
-    # find index of interval with minimum width
+    # find index of 2-sided interval with minimum width
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 7.7.2
     ind   <- which(dy == dymin)
     ind   <- as.integer(mean(ind) + 0.5)
     # left-hand and right-hand endpoints of coverage interval
-    ylow  <- Y[ind]
-    yhigh <- Y[ind + q]
+    ylow2gum  <- Y[ind]
+    yhigh2gum <- Y[ind + q]
     # associated p-values
-    plow  <- (ind) / Mpos
-    phigh <- (ind + q) / Mpos
-    
-    # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
-    # classic symmetric confidence bounds
-    ylowsym  <- quantile(
-      x      = Y,
-      probs  = plowsym,
-      names  = FALSE
-    )
-    yhighsym <- quantile(
-      x      = Y,
-      probs  = phighsym,
-      names  = FALSE
-    )
+    plow2gum  <- (ind) / Mpos
+    phigh2gum <- (ind + q) / Mpos
     
     # add results of iteration to list
     mclist <- append(mclist, list(list(
-      Y     = Y,
-      yest  = yest,
-      uy    = uy,
-      cvy   = cvy,
-      ylow  = ylow,
-      yhigh = yhigh,
-      Mpos  = Mpos
+      Y         = Y,
+      yest      = yest,
+      uy        = uy,
+      cvy       = cvy,
+      ylow2gum  = ylow2gum,
+      yhigh2gum = yhigh2gum,
+      Mpos      = Mpos
     )))
     
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 f)
@@ -605,14 +614,14 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
       next
     }
 
-    # standard error of the h values of yest, cvy, ylow, yhigh
+    # standard error of the h values of yest, uy, ylow2gum, yhigh2gum
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 g)
-    yest_se  <- sd(sapply(mclist, `[[`, "yest" )) / sqrt(h)
+    yest_se      <- sd(sapply(mclist, `[[`, "yest"     )) / sqrt(h)
 
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 h)
-    uy_se    <- sd(sapply(mclist, `[[`, "uy"   )) / sqrt(h)
-    ylow_se  <- sd(sapply(mclist, `[[`, "ylow" )) / sqrt(h)
-    yhigh_se <- sd(sapply(mclist, `[[`, "yhigh")) / sqrt(h)
+    uy_se        <- sd(sapply(mclist, `[[`, "uy"       )) / sqrt(h)
+    ylow2gum_se  <- sd(sapply(mclist, `[[`, "ylow2gum" )) / sqrt(h)
+    yhigh2gum_se <- sd(sapply(mclist, `[[`, "yhigh2gum")) / sqrt(h)
     
     # standard deviation of h*M values of Y
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 i)
@@ -628,10 +637,10 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     
     # Check if the tolerance condition is met
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
-    if (2 * yest_se  <= delta &&
-        2 * uy_se    <= delta &&
-        2 * ylow_se  <= delta &&
-        2 * yhigh_se <= delta) {
+    if (2 * yest_se      <= delta &&
+        2 * uy_se        <= delta &&
+        2 * ylow2gum_se  <= delta &&
+        2 * yhigh2gum_se <= delta) {
       break
     }
     
@@ -658,47 +667,68 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   dymin <- min(dy)
   ind   <- which(dy == dymin)
   ind   <- as.integer(mean(ind) + 0.5)
-  ylow  <- Y[ind]            # output value
-  yhigh <- Y[ind + q]        # output value
-  plow  <- (ind) / Mpos      # output value
-  phigh <- (ind + q) / Mpos  # output value
-  prob  <- unique(sort(
-    c(signif(c(plow   , phigh   ), digits = max(ndig, 3)),
-      signif(c(plowsym, phighsym), digits = max(ndig, 3)), 
+  ylow2gum  <- Y[ind]            # output value
+  yhigh2gum <- Y[ind + q]        # output value
+  plow2gum  <- (ind) / Mpos      # output value
+  phigh2gum <- (ind + q) / Mpos  # output value
+  plow1  <- 1 - pmu              # output value
+  phigh1 <- pmu                  # output value
+
+  # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
+  # classic symmetric confidence bounds
+  plow2sym  <- (1 - pmu) / 2     # output value
+  phigh2sym <- (1 + pmu) / 2     # output value = 1 - (1 - pmu) / 2
+
+  prob <- unique(sort(
+    c(signif(c(plow2gum, phigh2gum), digits = max(ndig, 3)),
+      signif(c(plow1,    phigh1   ), digits = max(ndig, 3)), 
+      signif(c(plow2sym, phigh2sym), digits = max(ndig, 3)),
       c(0.000, 0.025, 0.050, 0.500, 0.950, 0.975, 1.000)
     )))
-  yq       <- quantile(
+  yq   <- quantile(
     x      = Y,
     probs  = prob,
     names  = FALSE
   )
-  dY     <- density(Y)
-  dYsub  <- approx(dY$x, dY$y, xout = yq)$y
+  dY       <- density(Y)
+  dYsub    <- approx(dY$x, dY$y, xout = yq)$y
   ndecdig_density <- -(ceiling(log10(min(dYsub)))-ndig)
   if(delta == 0) {
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
-  yq <- data.frame(          # output value
+  yq <- data.frame(              # output value
     "p"    = prob,
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
   )
-  ylowsym  <- yq[yq$p == signif(plowsym,  digits = max(ndig, 3)),]$UTL
-  yhighsym <- yq[yq$p == signif(phighsym, digits = max(ndig, 3)),]$UTL
+  
+  # 2-sided confidence interval       [ylow1, yhigh1] confidence level pmu
+  ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
+  yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
+  
+  # Lower 1-sided confidence interval [ylow1, +∞[     confidence level pmu
+  ylow1     <- yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$UTL
+  
+  # Upper 1-sided confidence interval [0, yhigh1]     confidence level pmu
+  yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
   
   return(
     list(
-      yest      = round(yest,      digits = ndecdig),
-      cvy       = round(cvy,       digits = ndecdig),
-      ylow      = round(ylow,      digits = ndecdig),
-      yhigh     = round(yhigh,     digits = ndecdig),
-      plow      = signif(plow,     digits = max(ndig, 3)),
-      phigh     = signif(phigh,    digits = max(ndig, 3)),
-      ylowsym   = round(ylowsym,   digits = ndecdig),
-      yhighsym  = round(yhighsym,  digits = ndecdig),
-      plowsym   = signif(plowsym,  digits = max(ndig, 3)),
-      phighsym  = signif(phighsym, digits = max(ndig, 3)),
+      yest      = round (yest,      digits = ndecdig),
+      cvy       = round (cvy,       digits = ndecdig),
+      ylow2gum  = round (ylow2gum,  digits = ndecdig),
+      yhigh2gum = round (yhigh2gum, digits = ndecdig),
+      plow2gum  = signif(plow2gum,  digits = max(ndig, 3)),
+      phigh2gum = signif(phigh2gum, digits = max(ndig, 3)),
+      ylow2sym  = round (ylow2sym,  digits = ndecdig),
+      yhigh2sym = round (yhigh2sym, digits = ndecdig),
+      plow2sym  = signif(plow2sym,  digits = max(ndig, 3)),
+      phigh2sym = signif(phigh2sym, digits = max(ndig, 3)),
+      ylow1     = round (ylow1,     digits = ndecdig),
+      yhigh1    = round (yhigh1,    digits = ndecdig),
+      plow1     = signif(plow1,     digits = max(ndig, 3)),
+      phigh1    = signif(phigh1,    digits = max(ndig, 3)),
       yq        = yq,
       Y         = Y,
       Mpos      = Mpos,
