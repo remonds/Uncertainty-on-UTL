@@ -134,10 +134,16 @@
 #        = 70% one-sided upper tolerance limit of Q95 (UTL95,70)
 #        ("confidence limit" is used for the mean)
 ##########################################################################################
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  install.packages("data.table")
+}
+library(data.table)
+
 if (!requireNamespace("wzMisc", quietly = TRUE)) {
   devtools::install_github("slin30/wzMisc")
 }
 library(wzMisc)
+
 ##########################################################################################
 # test values used during development (cottondust)
 # twa  <- c(0.16, 0.38, 0.20, 0.44, 0.51, 0.60, 0.35, 0.70, 0.18, 0.65)
@@ -537,7 +543,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     # the slope represents the arithmetic standard deviation (ASDr)
     # the index r indicates that the value is obtained by using
     # the regression coefficients
-    library(data.table)
+    # need package data.table for these operations
     MLR <- function(known_ys, known_xs) {
       X <- cbind(1, known_xs)
       # solve(t(X) %*% X) gives the inverse of (t(X) %*% X)
