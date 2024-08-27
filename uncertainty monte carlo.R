@@ -337,7 +337,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   Y     <- unlist(lapply(mclist, `[[`, "Y"))
   Y     <- as.double(sort(Y, decreasing = FALSE))
   yest  <- mean(Y)           # output value
-  uy    <- sd(Y)
+  uy    <- sd(Y)             # output value
   cvy   <- uy / yest         # output value
   Mpos  <- length(Y)         # output value
   q     <- as.integer(pmu * Mpos + 0.5)
@@ -394,6 +394,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   return(
     list(
       yest      = round (yest,      digits = ndecdig),
+      uy        = round (uy,      digits = ndecdig),
       cvy       = round (cvy,       digits = ndecdig),
       ylow2gum  = round (ylow2gum,  digits = ndecdig),
       yhigh2gum = round (yhigh2gum, digits = ndecdig),
@@ -659,7 +660,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   Y     <- unlist(lapply(mclist, `[[`, "Y"))
   Y     <- as.double(sort(Y, decreasing = FALSE))
   yest  <- mean(Y)           # output value
-  uy    <- sd(Y)
+  uy    <- sd(Y)             # output value
   cvy   <- uy / yest         # output value
   Mpos  <- length(Y)         # output value
   q     <- as.integer(pmu * Mpos + 0.5)
@@ -716,6 +717,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   return(
     list(
       yest      = round (yest,      digits = ndecdig),
+      uy        = round (uy,        digits = ndecdig),
       cvy       = round (cvy,       digits = ndecdig),
       ylow2gum  = round (ylow2gum,  digits = ndecdig),
       yhigh2gum = round (yhigh2gum, digits = ndecdig),
