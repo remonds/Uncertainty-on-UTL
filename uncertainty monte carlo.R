@@ -176,6 +176,9 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   # coverage factor for quantiles
   # coefficient of model
   # put outside of loop to reduce calculation time
+  # Statistical Intervals - A Guide for Practitioners and Researchers
+  # Second Edition, 2017
+  # William Q. Meeker, Gerald J. Hahn, Luis A. Escobar
   UT   <- qt(p   = pexp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
