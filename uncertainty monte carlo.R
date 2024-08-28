@@ -137,11 +137,11 @@
 if (!requireNamespace("data.table", quietly = TRUE)) {
   install.packages("data.table")
 }
-library(data.table)
-
 if (!requireNamespace("wzMisc", quietly = TRUE)) {
   devtools::install_github("slin30/wzMisc")
 }
+
+library(data.table)
 library(wzMisc)
 
 ##########################################################################################
@@ -403,8 +403,8 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   return(
     list(
       yest      = round (yest,      digits = ndecdig),
-      uy        = round (uy,      digits = ndecdig),
-      cvy       = round (cvy,       digits = ndecdig),
+      uy        = round (uy,        digits = ndecdig),
+      cvy       = signif(cvy,       digits = max(ndig, 3)),
       ylow2gum  = round (ylow2gum,  digits = ndecdig),
       yhigh2gum = round (yhigh2gum, digits = ndecdig),
       plow2gum  = signif(plow2gum,  digits = max(ndig, 3)),
@@ -727,7 +727,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     list(
       yest      = round (yest,      digits = ndecdig),
       uy        = round (uy,        digits = ndecdig),
-      cvy       = round (cvy,       digits = ndecdig),
+      cvy       = signif(cvy,       digits = max(ndig, 3)),
       ylow2gum  = round (ylow2gum,  digits = ndecdig),
       yhigh2gum = round (yhigh2gum, digits = ndecdig),
       plow2gum  = signif(plow2gum,  digits = max(ndig, 3)),
