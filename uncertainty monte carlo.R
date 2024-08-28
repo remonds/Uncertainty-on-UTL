@@ -384,7 +384,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
   yq <- data.frame(              # output value
-    "p"    = prob,
+    "p"    = as.double(prob),
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
@@ -707,7 +707,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
   yq <- data.frame(              # output value
-    "p"    = prob,
+    "p"    = as.double(prob),
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
     row.names = format(prob)
