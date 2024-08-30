@@ -2,7 +2,9 @@
 
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
 
-> `Your project description here. == Reminder: still to be done ==`
+## Description
+
+Provide functions for the frequentist analysis of `environmental variability (ev)` and `measurement uncertainty (mu)` in occupational data without and with non-detects, using a Monte Carlo Method (MCM)
 
 ## Attribution
 
