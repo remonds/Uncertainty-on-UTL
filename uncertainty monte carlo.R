@@ -1,12 +1,22 @@
 ##########################################################################################
-# Uncertainty on UTL by Monte Carlo using frequentist approach
+# Uncertainty on UTL by Monte Carlo Method (MCM) using frequentist approach
 # 
-# iaw ISO/IEC GUIDE 98-3/Suppl.1:2008 Uncertainty 
-# of measurement Part 3: Guide to the expression 
-# of uncertainty in measurement (GUM:1995) 
-# Supplement 1: Propagation of distributions using 
-# a Monte Carlo method, 5.3.4 and 7.7.2
+# Description
+# Provide functions for the frequentist analysis of environmental
+# variability (ev) and measurement uncertainty (mu) in occupational data
+# without and with non-detects, using a  Monte Carlo Method (MCM)
 # 
+# References
+# (1) ISO/IEC Guide 98-3:2008/Suppl 1:2008, Uncertainty of 
+#     measurement — Part 3: Guide to the expression of uncertainty 
+#     in measurement (GUM:1995) — Supplement 1: Propagation of 
+#     distributions using a Monte Carlo method
+#     5.3.4 and 7.7.2
+# (2) William Q. Meeker, Gerald J. Hahn, Luis A. Escobar, (2017)
+#     Statistical Intervals - A Guide for Practitioners and
+#     Researchers, Second Edition,  John Wiley & Sons,  New Jersey
+# (3) Nelson A. Leidel, Kenneth A. Busch and Jeremiah R. Lynch, (1977) 
+#     Exposure Sampling Strategy Manual, NIOSH
 # 
 # Robert Emonds   BSOH           robert.emonds@bsoh.be, robert.emonds@outlook.com
 # Theo Scheffers  TSAC           theo.scheffers@tsac.nl
@@ -26,35 +36,35 @@
 # 07/08/2024
 # added parameters ueft, pexp and pmu to input, with EN689 defaults
 # remains compatible with previous versions
-# utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
-# utl.ros.mc(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.mu(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.ros.mu(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 # 
 # 28/07/2024
 # added adaptive procedure to adapt number of trials 
 # to desired number of significant decimal digits
-# utl.mc(twa, CVt, ndig = 2)
-# utl.ros.mc(twa, detects, CVt, ndig = 2)
+# utl.mu(twa, CVt, ndig = 2)
+# utl.ros.mu(twa, detects, CVt, ndig = 2)
 # remains compatible with previous versions
 # 
 # 23/07/2024
 # added p-values plow and phigh to output
 # 
 # 19/07/2024
-# utl.ros.mc(twa, detects, CVt)
+# utl.ros.mu(twa, detects, CVt)
 # for datasets with nondetects
 # measurement uncertainty interval on utl by Multiple Linear Regression on detects
 # frequentist approach
 # see description below of input and output variables
 # 
 # 26/05/2024
-# utl.mc(twa, CVt)
+# utl.mu(twa, CVt)
 # for datasets without nondetects
 # measurement uncertainty interval on utl - no nondetects
 # frequentist approach
 # see description below of input and output variables
 ##########################################################################################
-# utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
-# utl.ros.mc(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.mu(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.ros.mu(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 # 
 # input variables
 # twa     : numeric vector of 8h time-weighted exposure
@@ -154,11 +164,12 @@ library(wzMisc)
 # pmu  <- 0.95
 # ndig <- 2
 # 
-# mc <- utl.mc(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# mc <- utl.mu(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
 ######################################################################
 
-utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
+  # 5.3.4 Asymmetric PDF
   # 7.3   Sampling from probability distributions
   # 7.4   Evaluation of the model
   # 7.5   Discrete representation of the distribution function for the output quantity
@@ -179,12 +190,20 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   # number of input quantities
   N    <- length(twa)
   
-  # coverage factor for quantiles
-  # coefficient of model
-  # put outside of loop to reduce calculation time
+  # UT = coverage factor for quantiles of UTL
+  #   is relating to distribution of exposure
+  #   is due to environmental variability (ev) 
+  #   is coefficient of model
+  #   is put outside of loop to reduce calculation time
+  # Reference:
   # Statistical Intervals - A Guide for Practitioners and Researchers
   # Second Edition, 2017
   # William Q. Meeker, Gerald J. Hahn, Luis A. Escobar
+  # UTL = GM * GSD^UT
+  # UTL = upper tolerance limit of percentile=1-ueft of
+  #       distribution of TWA-8 hr exposure due to ev
+  #     = 1-sided upper confidence limit of percentile=1-ueft of
+  #       distribution of TWA-8 hr exposure due to ev
   UT   <- qt(p   = pexp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
@@ -193,7 +212,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   # Initialize the list to store results of each iteration
   mclist <- list()
   
-  # initialize counter for number of iterations
+  # initialize counter for iterations
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 c)
   h    <- 1
   
@@ -226,10 +245,12 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     X <- log(X)
     
     ##########################################################################################
-    # Propagation of the input distributions through the model
-    # model: calculate by row
-    #   1. GM and GSD
-    #   2. Y = UTL = GM * GSD^UT
+    # Propagation of the input distributions
+    # of the measurement uncertainty (mu) through the model
+    #   1. model: calculate by row X[i]
+    #      GM[i], GSD[i] and UTL[i] = GM[i] * GSD[i]^UT
+    #   2. repeat for all M rows, result is output vector Y with M values of UTL
+    #      Y = distribution of UTL due to mu
     ##########################################################################################
     # Propagate the input distributions through the model ------- apply()
     # Transform back to the lognormally distributed space and --- exp()
@@ -237,8 +258,9 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     # The model Y=UTL=GM*GSD^UT is iaw EN 689 Annex F
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.4 Evaluation of the model
     # GM <- exp(rowMeans(X))
-    GM  <- exp(apply(X, 1, mean))
-    GSD <- exp(apply(X, 1, sd  ))
+    # apply with MARGIN = 1 means apply FUN over rows of X
+    GM  <- exp(apply(X = X, MARGIN = 1, FUN = mean)) 
+    GSD <- exp(apply(X = X, MARGIN = 1, FUN = sd  ))
     Y   <- as.double(GM * GSD^UT)
     
     ##########################################################################################
@@ -270,7 +292,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
     # minimum width of the coverage interval
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 5.3.4, 7.7.2
     dymin <- min(dy)
     
     # find index of 2-sided interval with minimum width
@@ -320,7 +342,7 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     
     # numerical tolerance, delta
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.2 b), 7.9.4 j)
-    delta    <- 0.5 * 10^(-ndecdig)
+    delta <- 0.5 * 10^(-ndecdig)
 
     # Check if the tolerance condition is met
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 k)
@@ -437,11 +459,12 @@ utl.mc <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
 # pmu     <- 0.95
 # ndig <- 2
 # 
-# mc <- utl.ros.mc(twa, detects, CVt)
+# mc <- utl.ros.mu(twa, detects, CVt)
 ##########################################################################################
   
-utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
+  # 5.3.4 Asymmetric PDF
   # 7.3   Sampling from probability distributions
   # 7.4   Evaluation of the model
   # 7.5   Discrete representation of the distribution function for the output quantity
@@ -462,9 +485,20 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   # number of input quantities
   N    <- length(twa)
   
-  # coverage factor for quantiles
-  # coefficient of model
-  # put outside of loop to reduce calculation time
+  # UT = coverage factor for quantiles of UTL
+  #   is relating to distribution of exposure
+  #   is due to environmental variability (ev) 
+  #   is coefficient of model
+  #   is put outside of loop to reduce calculation time
+  # Reference:
+  # Statistical Intervals - A Guide for Practitioners and Researchers
+  # Second Edition, 2017
+  # William Q. Meeker, Gerald J. Hahn, Luis A. Escobar
+  # UTL = GM * GSD^UT
+  # UTL = upper tolerance limit of percentile=1-ueft of
+  #       distribution of TWA-8 hr exposure due to ev
+  #     = 1-sided upper confidence limit of percentile=1-ueft of
+  #       distribution of TWA-8 hr exposure due to ev
   UT   <- qt(p   = pexp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
@@ -486,7 +520,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   # Initialize the list to store results of each iteration
   mclist <- list()
   
-  # initialize counter for number of iterations
+  # initialize counter for iterations
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 c)
   h    <- 1
   
@@ -593,7 +627,7 @@ utl.ros.mc <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
     # minimum width of the coverage interval
-    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
+    # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 5.3.4, 7.7.2
     dymin <- min(dy)
     
     # find index of 2-sided interval with minimum width
