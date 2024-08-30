@@ -402,6 +402,7 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   dY       <- density(Y)
   dYsub    <- approx(dY$x, dY$y, xout = yq)$y
   ndecdig_density <- -(ceiling(log10(min(dYsub)))-ndig)
+  # need package wzMisc for count_sigfigs
   if(delta == 0) {
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
@@ -737,6 +738,7 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   dY       <- density(Y)
   dYsub    <- approx(dY$x, dY$y, xout = yq)$y
   ndecdig_density <- -(ceiling(log10(min(dYsub)))-ndig)
+  # need package wzMisc for count_sigfigs
   if(delta == 0) {
     ndecdig <- max(count_sigfigs(twa - floor(twa)))
   }
