@@ -63,8 +63,8 @@
 # frequentist approach
 # see description below of input and output variables
 ##########################################################################################
-# utl.mu(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
-# utl.ros.mu(twa, detects, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# utl.mu(twa, CVt, ndig = 2, ueft = 0.05, loc_exp = 0.70, cp_mu = 0.95)
+# utl.ros.mu(twa, detects, CVt, ndig = 2, ueft = 0.05, loc_exp = 0.70, cp_mu = 0.95)
 # 
 # input variables
 # twa     : numeric vector of 8h time-weighted exposure
@@ -83,10 +83,13 @@
 #           ndig = 2  computing time is in the order of seconds
 #           ndig = 3  computing time is in the order of minutes
 # ueft    : upper exceedance fraction threshold for exposure
-# pexp    : 1-sided coverage level for exposure
-# pmu     : coverage level for measurement uncertainty
+# loc_exp : 1-sided level of confidence for exposure
+#           see confidence level in statistics
+#           (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 4.11)
+# cp_mu   : coverage probability for measurement uncertainty
 #           both 1-sided and 2-sided coverage intervals
 #           will be reported
+#           (iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 4.11)
 # 
 # output variables
 # yest     : estimate of Y, obtained as the average of 
@@ -124,15 +127,27 @@
 # 
 # yq       : characteristic quantiles (for research purposes)
 #  p-values:
-#  0.000                 │       minimum y-value of Monte Carlo trials
-#        plow2gum  ══════╪═══╗
-#  0.025 plow2sym  ──────┼───╫───┐
-#  0.050 plow1     ──┐   │   ║   │  coverage intervals
-#  0.500            95% 95% 95% 95% of measurement 
-#  0.950 phigh1    ──┼───┘   ║   |  uncertainty
-#        phigh2gum ══╪═══════╝   |
-#  0.975 phigh2sym ──┼───────────┘
-#  1.000             │           maximum y-value of Monte Carlo trials
+#  0.000                       │    │   minimum y-value of Monte Carlo trials
+#        plow2gum  ════════════╪════╪═════╗
+#        plow2sym  ────────────┼────┼─────╫─────────┐
+#  0.025           ────────────┼────┼─────╫────┐    |
+#        plow1     ───────┐    │    │     ║    │    |
+#  0.050           ──┐    │    │    │     ║    │    |    coverage intervals
+#  0.500            95% cp_mu 95% cp_mu cp_mu 95% cp_mu of measurement 
+#  0.950           ──┼────┼────┘    │     ║    |    |    uncertainty
+#        phigh1    ──┼────┼─────────┘     ║    |    |    with coverage probabilities
+#  0.975           ──┼────┼───────────────╫────┘    |    95% and cp_mu
+#        phigh2gum ══╪════╪═══════════════╝         |
+#        phigh2sym ──┼────┼─────────────────────────┘
+#  1.000             │    │             maximum y-value of Monte Carlo trials
+#  By default
+#    cp_mu = 0.95
+#  consequently, by default
+#    plow2sym = 0.025 and phigh2sim = 0.975
+#    plow1    = 0.050 and phigh1    = 0.950
+#  the p-values of 0.000, 0.025, 0.050, 0.950, 0.975 and 1.000 are always reported
+#  even if cp_mu is different from 0.95
+# 
 # Mpos     : number of Monte Carlo trials with positive
 #            values for Y (= UTL)
 # ndig     : number of significant decimal digits regarded
@@ -160,14 +175,14 @@ library(wzMisc)
 # CVt  <- c(0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15)
 # CVt  <- c(0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
 # ueft <- 0.05
-# pexp <- 0.70
-# pmu  <- 0.95
+# loc_exp <- 0.70
+# cp_mu   <- 0.95
 # ndig <- 2
 # 
-# mc <- utl.mu(twa, CVt, ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95)
+# mc <- utl.mu(twa, CVt, ndig = 2, ueft = 0.05, loc_exp = 0.70, cp_mu = 0.95)
 ######################################################################
 
-utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, loc_exp = 0.70, cp_mu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
   # 5.3.4 Asymmetric PDF
   # 7.3   Sampling from probability distributions
@@ -185,7 +200,7 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
-  M    <- max(100 / (1 - pmu), 1e4)
+  M    <- max(100 / (1 - cp_mu), 1e4)
   
   # number of input quantities
   N    <- length(twa)
@@ -204,7 +219,7 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   #       distribution of TWA-8 hr exposure due to ev
   #     = 1-sided upper confidence limit of percentile=1-ueft of
   #       distribution of TWA-8 hr exposure due to ev
-  UT   <- qt(p   = pexp,
+  UT   <- qt(p   = loc_exp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
              ) / sqrt(N)
@@ -285,7 +300,7 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
 
     # index for coverage width in output vector
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
-    q     <- as.integer(pmu * Mpos + 0.5)
+    q     <- as.integer(cp_mu * Mpos + 0.5)
     
     # width of the coverage interval
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
@@ -371,7 +386,7 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   uy    <- sd(Y)             # output value
   cvy   <- uy / yest         # output value
   Mpos  <- length(Y)         # output value
-  q     <- as.integer(pmu * Mpos + 0.5)
+  q     <- as.integer(cp_mu * Mpos + 0.5)
   dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
@@ -380,13 +395,13 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
   yhigh2gum <- Y[ind + q]        # output value
   plow2gum  <- (ind) / Mpos      # output value
   phigh2gum <- (ind + q) / Mpos  # output value
-  plow1  <- 1 - pmu              # output value
-  phigh1 <- pmu                  # output value
+  plow1  <- 1 - cp_mu              # output value
+  phigh1 <- cp_mu                  # output value
 
   # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
   # classic symmetric confidence bounds
-  plow2sym  <- (1 - pmu) / 2     # output value
-  phigh2sym <- (1 + pmu) / 2     # output value = 1 - (1 - pmu) / 2
+  plow2sym  <- (1 - cp_mu) / 2     # output value
+  phigh2sym <- (1 + cp_mu) / 2     # output value = 1 - (1 - cp_mu) / 2
 
   prob <- unique(sort(
     c(signif(c(plow2gum, phigh2gum), digits = max(ndig, 3)),
@@ -413,14 +428,14 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
     row.names = format(prob)
   )
   
-  # 2-sided confidence interval       [ylow1, yhigh1] confidence level pmu
+  # 2-sided confidence interval       [ylow1, yhigh1] coverage prob cp_mu
   ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
   yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
   
-  # Lower 1-sided confidence interval [ylow1, +∞[     confidence level pmu
+  # Lower 1-sided confidence interval [ylow1, +∞[     coverage prob cp_mu
   ylow1     <- yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$UTL
 
-  # Upper 1-sided confidence interval [0, yhigh1]     confidence level pmu
+  # Upper 1-sided confidence interval [0, yhigh1]     coverage prob cp_mu
   yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
   
   return(
@@ -456,14 +471,14 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp =
 # CVt     <- c( 0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15,  0.15)
 # CVt     <- c( 0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00,  0.00)
 # ueft    <- 0.05
-# pexp    <- 0.70
-# pmu     <- 0.95
+# loc_exp <- 0.70
+# cp_mu   <- 0.95
 # ndig <- 2
 # 
 # mc <- utl.ros.mu(twa, detects, CVt)
 ##########################################################################################
   
-utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, pexp = 0.70, pmu = 0.95) {
+utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, loc_exp = 0.70, cp_mu = 0.95) {
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008
   # 5.3.4 Asymmetric PDF
   # 7.3   Sampling from probability distributions
@@ -481,7 +496,7 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   
   # number of Monte Carlo trials
   # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.9.4 b)
-  M    <- max(100 / (1 - pmu), 1e4)
+  M    <- max(100 / (1 - cp_mu), 1e4)
   
   # number of input quantities
   N    <- length(twa)
@@ -500,7 +515,7 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   #       distribution of TWA-8 hr exposure due to ev
   #     = 1-sided upper confidence limit of percentile=1-ueft of
   #       distribution of TWA-8 hr exposure due to ev
-  UT   <- qt(p   = pexp,
+  UT   <- qt(p   = loc_exp,
              df  = N - 1,
              ncp = sqrt(N) * qnorm(1 - ueft)
              ) / sqrt(N)
@@ -621,7 +636,7 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
 
     # index for coverage width in output vector
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
-    q     <- as.integer(pmu * Mpos + 0.5)
+    q     <- as.integer(cp_mu * Mpos + 0.5)
     
     # width of the coverage interval
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
@@ -707,7 +722,7 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   uy    <- sd(Y)             # output value
   cvy   <- uy / yest         # output value
   Mpos  <- length(Y)         # output value
-  q     <- as.integer(pmu * Mpos + 0.5)
+  q     <- as.integer(cp_mu * Mpos + 0.5)
   dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
   dymin <- min(dy)
   ind   <- which(dy == dymin)
@@ -716,13 +731,13 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
   yhigh2gum <- Y[ind + q]        # output value
   plow2gum  <- (ind) / Mpos      # output value
   phigh2gum <- (ind + q) / Mpos  # output value
-  plow1  <- 1 - pmu              # output value
-  phigh1 <- pmu                  # output value
+  plow1  <- 1 - cp_mu              # output value
+  phigh1 <- cp_mu                  # output value
 
   # in addition to ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7
   # classic symmetric confidence bounds
-  plow2sym  <- (1 - pmu) / 2     # output value
-  phigh2sym <- (1 + pmu) / 2     # output value = 1 - (1 - pmu) / 2
+  plow2sym  <- (1 - cp_mu) / 2     # output value
+  phigh2sym <- (1 + cp_mu) / 2     # output value = 1 - (1 - cp_mu) / 2
 
   prob <- unique(sort(
     c(signif(c(plow2gum, phigh2gum), digits = max(ndig, 3)),
@@ -749,14 +764,14 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     row.names = format(prob)
   )
   
-  # 2-sided confidence interval       [ylow1, yhigh1] confidence level pmu
+  # 2-sided confidence interval       [ylow1, yhigh1] coverage prob cp_mu
   ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
   yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
   
-  # Lower 1-sided confidence interval [ylow1, +∞[     confidence level pmu
+  # Lower 1-sided confidence interval [ylow1, +∞[     coverage prob cp_mu
   ylow1     <- yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$UTL
   
-  # Upper 1-sided confidence interval [0, yhigh1]     confidence level pmu
+  # Upper 1-sided confidence interval [0, yhigh1]     coverage prob cp_mu
   yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
   
   return(
