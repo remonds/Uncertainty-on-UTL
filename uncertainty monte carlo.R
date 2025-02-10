@@ -302,11 +302,11 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, loc_ex
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     q     <- as.integer(cp_mu * Mpos + 0.5)
     
-    # width of the coverage interval
+    # widths of all the coverage intervals
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
-    # minimum width of the coverage interval
+    # minimum width of all the coverage intervals
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 5.3.4, 7.7.2
     dymin <- min(dy)
     
@@ -425,10 +425,11 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, loc_ex
     "p"    = as.double(prob),
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
+    "Comment" = rep(x = "", length.out = length(prob)),
     row.names = format(prob)
   )
   
-  # 2-sided confidence interval       [ylow1, yhigh1] coverage prob cp_mu
+  # 2-sided confidence interval [ylow2sym, yhigh2sym] coverage prob cp_mu
   ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
   yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
   
@@ -437,6 +438,70 @@ utl.mu <- function(twa, CVt = rep(0, length(twa)), ndig = 2, ueft = 0.05, loc_ex
 
   # Upper 1-sided confidence interval [0, yhigh1]     coverage prob cp_mu
   yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
+  
+  # provide names of confidence bounds
+  yq[yq$p == signif(0.000,     digits = max(ndig, 3)),]$Comment <- "Minimum positive of all trials"
+  yq[yq$p == signif(0.500,     digits = max(ndig, 3)),]$Comment <- "Median of all trials"
+  yq[yq$p == signif(1.000,     digits = max(ndig, 3)),]$Comment <- "Maximum of all trials"
+  yq[yq$p == signif(0.025,     digits = max(ndig, 3)),]$Comment <- "LCL2,95(UTL95,70,u) (sym)"
+  yq[yq$p == signif(0.975,     digits = max(ndig, 3)),]$Comment <- "UCL2,95(UTL95,70,u) (sym)"
+  yq[yq$p == signif(0.050,     digits = max(ndig, 3)),]$Comment <- "LCL1,95(UTL95,70,u)"
+  yq[yq$p == signif(0.950,     digits = max(ndig, 3)),]$Comment <- "UCL1,95(UTL95,70,u)"
+  
+  yq[yq$p == signif(plow2gum,  digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (asym)",
+          sep = "")
+  yq[yq$p == signif(phigh2gum, digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (asym)",
+          sep = "")
+  yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (sym)",
+          sep = "")
+  yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (sym)",
+          sep = "")
+  yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL1,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u)",
+          sep = "")
+  yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL1,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u)",
+          sep = "")
   
   return(
     list(
@@ -638,11 +703,11 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     q     <- as.integer(cp_mu * Mpos + 0.5)
     
-    # width of the coverage interval
+    # widths of all the coverage intervals
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 7.7.2
     dy    <- Y[(q + 1):Mpos] - Y[1:(Mpos - q)]
     
-    # minimum width of the coverage interval
+    # minimum width of all the coverage intervals
     # iaw ISO/IEC GUIDE 98-3/Suppl.1:2008, 5.3.4, 7.7.2
     dymin <- min(dy)
     
@@ -761,18 +826,83 @@ utl.ros.mu <- function(twa, detects, CVt = rep(0, length(twa)), ndig = 2, ueft =
     "p"    = as.double(prob),
     "d"    = round(dYsub, digits = ndecdig_density),
     "UTL"  = round(yq   , digits = ndecdig        ),
+    "Comment" = rep(x = "", length.out = length(prob)),
     row.names = format(prob)
   )
   
-  # 2-sided confidence interval       [ylow1, yhigh1] coverage prob cp_mu
+  # 2-sided confidence interval [ylow2sym, yhigh2sym] coverage prob cp_mu
   ylow2sym  <- yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$UTL
   yhigh2sym <- yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$UTL
-  
+
   # Lower 1-sided confidence interval [ylow1, +∞[     coverage prob cp_mu
   ylow1     <- yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$UTL
-  
+
   # Upper 1-sided confidence interval [0, yhigh1]     coverage prob cp_mu
   yhigh1    <- yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$UTL
+
+  # provide names of confidence bounds
+  yq[yq$p == signif(0.000,     digits = max(ndig, 3)),]$Comment <- "Minimum positive of all trials"
+  yq[yq$p == signif(0.500,     digits = max(ndig, 3)),]$Comment <- "Median of all trials"
+  yq[yq$p == signif(1.000,     digits = max(ndig, 3)),]$Comment <- "Maximum of all trials"
+  yq[yq$p == signif(0.025,     digits = max(ndig, 3)),]$Comment <- "LCL2,95(UTL95,70,u) (sym)"
+  yq[yq$p == signif(0.975,     digits = max(ndig, 3)),]$Comment <- "UCL2,95(UTL95,70,u) (sym)"
+  yq[yq$p == signif(0.050,     digits = max(ndig, 3)),]$Comment <- "LCL1,95(UTL95,70,u)"
+  yq[yq$p == signif(0.950,     digits = max(ndig, 3)),]$Comment <- "UCL1,95(UTL95,70,u)"
+  
+  yq[yq$p == signif(plow2gum,  digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (asym)",
+          sep = "")
+  yq[yq$p == signif(phigh2gum, digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (asym)",
+          sep = "")
+  yq[yq$p == signif(plow2sym,  digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (sym)",
+          sep = "")
+  yq[yq$p == signif(phigh2sym, digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL2,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u) (sym)",
+          sep = "")
+  yq[yq$p == signif(plow1,     digits = max(ndig, 3)),]$Comment <- 
+    paste("LCL1,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u)",
+          sep = "")
+  yq[yq$p == signif(phigh1,    digits = max(ndig, 3)),]$Comment <- 
+    paste("UCL1,",
+          round(cp_mu * 100,      digits = 0),
+          "(UTL",
+          round((1 - ueft) * 100, digits = 0),
+          ",", 
+          round(loc_exp * 100,    digits = 0),
+          ",u)",
+          sep = "")
   
   return(
     list(
