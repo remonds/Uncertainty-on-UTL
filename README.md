@@ -22,7 +22,8 @@ Each release is tagged using a semantic versioning style with descriptive labels
 
 🔖 The first release uses a simplified additive model around observed values and is preserved for comparison and didactic purposes.
 
-🛠 See our [Development Workflow](../../wiki/Development-Workflow) for more details.
+🛠 See our [Development Workflow](../../wiki#development-workflow) for more details.
+
 
 ## Attribution
 
