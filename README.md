@@ -6,6 +6,24 @@
 
 Provide functions for the frequentist analysis of `environmental variability (ev)` and `measurement uncertainty (mu)` in occupational data without and with non-detects, using a Monte Carlo Method (MCM)
 
+## 🧭 Versioning & Development Workflow
+
+We follow a branching model with three key branches:
+
+- `main` → Stable code in production (latest release version)
+- `dev` → Active development of the next version
+- `feature/*` → Branches for individual features or specific tasks
+
+### Release Process
+
+Each release is tagged using a semantic versioning style with descriptive labels:
+- `v1.0.0-additive-on-obs`
+- `v2.0.0-lognormal-on-true` *(planned)*
+
+🔖 The first release uses a simplified additive model around observed values and is preserved for comparison and didactic purposes.
+
+🛠 See our [Development Workflow](../../wiki/Development-Workflow) for more details.
+
 ## Attribution
 
 This project was created by Robert Emonds, Theo Scheffers, and Peter van Balen. If you use this code, please give credit by including a link to this repository and mentioning the authors.
